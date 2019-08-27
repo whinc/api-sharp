@@ -1,6 +1,6 @@
 {
   "name": "api-sharp",
-  "version": "0.0.0-development",
+  "version": "0.0.1",
   "main": "dist/index.js",
   "module": "dist/api-sharp.esm.js",
   "typings": "dist/index.d.ts",
@@ -22,6 +22,9 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "prettier": {
     "printWidth": 80,
@@ -66,8 +69,5 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/whinc/api-sharp.git"
-  },
-  "publishConfig": {
-    "access": "restricted"
   }
 }
