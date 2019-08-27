@@ -7,13 +7,4 @@ jobs:
       - checkout
       - run:
         name: install
-        command: npm install
-      # - run:
-      #   name: test
-      #   command: npm run test
-      - run:
-        name: build
-        command: npm run build
-      - run:
-        name: release
-        command: npm run semantic-release || true
+        command: echo "hello"
