@@ -79,7 +79,7 @@ describe('测试 ApiSharp.request', () => {
     const responseData = serverData.posts.find(post => post.id === id);
     expect(data[0]).toEqual(responseData);
   });
-  test.only('使用缓存的 GET 请求', async () => {
+  test('使用缓存的 GET 请求', async () => {
     const id = 2;
     const [responseData] = await apiSharp.request({
       url: 'http://localhost:4000/posts/',
