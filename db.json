@@ -1,9 +1,36 @@
 {
   "posts": [
-    { "id": 1, "title": "json-server", "author": "typicode" }
+    {
+      "id": 1,
+      "title": "post1",
+      "author": "jack"
+    },
+    {
+      "id": 2,
+      "title": "post2",
+      "author": "jim"
+    },
+    {
+      "title": "post",
+      "author": "jack",
+      "date": 1566809234792,
+      "id": 3
+    },
+    {
+      "title": "post",
+      "author": "jack",
+      "date": 1566809242183,
+      "id": 4
+    }
   ],
   "comments": [
-    { "id": 1, "body": "some comment", "postId": 1 }
+    {
+      "id": 1,
+      "body": "some comment",
+      "postId": 1
+    }
   ],
-  "profile": { "name": "typicode" }
+  "profile": {
+    "name": "typicode"
+  }
 }

@@ -1,27 +1,28 @@
-# TSDX Bootstrap
+# ApiSharp
 
-This project was bootstrapped with [TSDX](https://github.com/jaredpalmer/tsdx).
+网络接口请求库
 
-## Local Development
+计划特性：
 
-Below is a list of commands you will probably find useful.
+- 声明式的接口定义
+- 参支持请求参数和响应数据检验
+- 支持数据 mock
+- 支持多种缓存策略（会话缓存、持久缓存、缓存期限）
+- 支持插件
+- 支持自定义输出日志
+- 适配多种网络请求库
+- 支持跨平台（web、RN、小程序）
+- 支持导出文档
+- 提供 DevTools 支持
 
-### `npm start` or `yarn start`
+## 贡献
 
-Runs the project in development/watch mode. Your project will be rebuilt upon changes. TSDX has a special logger for you convenience. Error messages are pretty printed and formatted for compatibility VS Code's Problems tab.
+**启动项目**
 
-<img src="https://user-images.githubusercontent.com/4060187/52168303-574d3a00-26f6-11e9-9f3b-71dbec9ebfcb.gif" width="600" />
+```
+npm install
+npm run server
+npm run test:watch
+```
 
-Your library will be rebuilt if you make edits.
-
-### `npm run build` or `yarn build`
-
-Bundles the package to the `dist` folder.
-The package is optimized and bundled with Rollup into multiple formats (CommonJS, UMD, and ES Module).
-
-<img src="https://user-images.githubusercontent.com/4060187/52168322-a98e5b00-26f6-11e9-8cf6-222d716b75ef.gif" width="600" />
-
-### `npm test` or `yarn test`
-
-Runs the test watcher (Jest) in an interactive mode.
-By default, runs tests related to files changed since the last commit.
+使用 [json-server](https://github.com/typicode/json-server) 作为模拟 RESTful 接口。
