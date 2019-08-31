@@ -13,6 +13,7 @@
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
     "server": "json-server -p 4000 db.json",
+    "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "semantic-release": "semantic-release"
   },
   "peerDependencies": {
@@ -25,12 +26,6 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "prettier": {
-    "printWidth": 80,
-    "semi": true,
-    "singleQuote": true,
-    "trailingComma": "es5"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
@@ -54,17 +49,6 @@
   },
   "dependencies": {
     "tiny-invariant": "^1.0.6"
-  },
-  "jest": {
-    "globals": {
-      "__DEV__": true
-    },
-    "testMatch": [
-      "<rootDir>/test/*.ts"
-    ],
-    "modulePathIgnorePatterns": [
-      "<rootDir>/\\w+\\.json"
-    ]
   },
   "repository": {
     "type": "git",
