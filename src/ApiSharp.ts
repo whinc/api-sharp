@@ -2,7 +2,7 @@ import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
 import { ApiDescriptor, HTTPMethod } from "./ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
-import { isString, isFunction, getSortedString } from "./utils"
+import { isString, isFunction, getSortedString, isUndefined, isNumber } from "./utils"
 import ICache from "./ICache"
 import ExpireCache from "./ExpireCache"
 
@@ -14,7 +14,12 @@ export interface ApiSharpOptions {
 
 export interface ApiSharpResponse<T> {
   data: T
+  from: "cache" | "network"
 }
+
+const defaultMethod = 'GET'
+const defaultDescription = ''
+const defaultCacheTime = 5 * 1000
 
 export class ApiSharp {
   private axios: AxiosInstance
@@ -27,6 +32,9 @@ export class ApiSharp {
     this.cache = options.cache || new ExpireCache<Promise<AxiosResponse>>()
   }
 
+  /**
+   * 发送请求
+   */
   async request(api: ApiDescriptor): Promise<ApiSharpResponse<any>> {
     api = this.processApi(api)
 
@@ -78,7 +86,14 @@ export class ApiSharp {
       this.logResponse(api, res.data)
     }
 
-    return { data: res.data }
+    return { data: res.data, from: hitCache ? "cache" : "network" }
+  }
+
+  /**
+   * 清除全部缓存
+   */
+  public clearCache () {
+    return this.cache.clear()
   }
 
   private sendRequest(api: ApiDescriptor): Promise<AxiosResponse> {
@@ -96,42 +111,57 @@ export class ApiSharp {
   }
 
   private processApi(api: ApiDescriptor): ApiDescriptor {
-    const _api = { ...api }
     invariant(api, "api 为空")
-    invariant(isString(api.url), "api.url 不是字符串类型")
-    invariant(api.url, "api.url 为空字符串")
-    invariant(api.method === undefined || isString(api.method), "api.method 取值无效")
-    invariant(
-      api.description === undefined || isString(api.description) || isFunction(api.description),
-      "api.description 取值无效"
-    )
+
+    const _api = { ...api }
 
     // 移除首部多余分隔符
-    _api.url = api.url.replace(/^\/{2,}/, "/")
+    if (isString(api.url) && !!api.url) {
+      _api.url = api.url.replace(/^\/{2,}/, "/")
+    } else {
+      invariant(false, `url 期望类型为 string，实际值为"${api.url}"`)
+    }
 
     // 移除尾部多余分隔符
     _api.baseURL = (api.baseURL || this.axios.defaults.baseURL || "").replace(/\/+$/, "")
 
-    if (api.method === undefined) {
-      _api.method = "GET"
+    // 请求方法
+    if (isUndefined(api.method)) {
+      _api.method = defaultMethod
+    } else if (isString(api.method) && /get|post|delete|head|options|put|patch/i.test(api.method)){
+      _api.method = api.method.toUpperCase() as HTTPMethod
     } else {
-      _api.method = <HTTPMethod>api.method.toUpperCase()
+      invariant(false, `method 期望值为 get|post|delete|head|options|put|patch 其一，实际值为"${api.method}"`)
     }
 
     // 描述
-    if (api.description === undefined) {
-      _api.description = ""
+    if (isUndefined(api.description)) {
+      _api.description = defaultDescription
     } else if (isFunction(api.description)) {
       _api.description = api.description.call(null, api)
     } else if (isString(api.description)) {
       _api.description = api.description
+    } else {
+      invariant(false, `description 期望类型为 string/function，实际值为"${api.description}"`)
     }
 
+    // 开启缓存
     _api.enableCache = isFunction(api.enableCache) ? api.enableCache.call(null, api) : !!api.enableCache
 
     if (_api.method !== "GET" && _api.enableCache) {
       _api.enableCache = false
-      warning(true, `只有 GET 请求支持开启缓存，当前请求方法为 ${_api.method}，自动关闭改接口的缓存`)
+      warning(false, `只有 GET 请求支持开启缓存，当前请求方法为"${_api.method}"，缓存开启不会生效`)
+    }
+
+    // 缓存时间
+    if (isUndefined(api.cacheTime)) {
+      _api.cacheTime = defaultCacheTime
+    } else if (isNumber(api.cacheTime)) {
+      _api.cacheTime = api.cacheTime
+    } else if (isFunction(api.cacheTime)) {
+      _api.cacheTime = api.cacheTime.call(null, api)
+    } else {
+      invariant(false, `cacheTime 期望是 number/function 类型，实际值是"${api.cacheTime}"`)
     }
 
     return _api

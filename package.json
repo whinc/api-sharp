@@ -9,9 +9,10 @@
   ],
   "scripts": {
     "start": "tsdx watch",
-    "build": "tsdx build",
+    "build": "npm run clean && tsdx build --format cjs,esm,umd --name ApiSharp",
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
+    "clean": "rm dist/*",
     "server": "json-server -p 4000 ./db.json",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "semantic-release": "semantic-release"
@@ -63,7 +64,8 @@
       "<rootDir>/test/*.test.ts"
     ],
     "watchPathIgnorePatterns": [
-      "<rootDir>/[^/]+\\.\\w+$"
+      "<rootDir>/[^/]+\\.\\w+$",
+      "<rootDir>/node_modules/"
     ]
   }
 }

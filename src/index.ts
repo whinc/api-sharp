@@ -1,1 +1,3 @@
-export {ApiSharp} from './ApiSharp'
+import {ApiSharp} from './ApiSharp'
+
+export default ApiSharp

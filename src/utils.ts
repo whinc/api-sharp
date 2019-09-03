@@ -6,6 +6,14 @@ export function isFunction(v: any): v is Function {
   return typeof v === 'function';
 }
 
+export function isUndefined (v: any): v is undefined {
+  return v === undefined
+}
+
+export function isNumber(v: any): v is number {
+  return typeof v === 'number'
+}
+
 /**
  * 对对象进行深度排序
  *

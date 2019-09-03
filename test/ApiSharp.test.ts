@@ -2,6 +2,7 @@ import axios from "axios"
 import { ApiSharp } from "../src/ApiSharp"
 import { ApiDescriptor } from "../src/ApiDescriptor"
 
+// 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
 const apiSharp: any = new ApiSharp({ axios, enableLog: false })
 
 const baseURL = "http://localhost:4000"
@@ -118,53 +119,85 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
   describe("测试缓存", () => {
-    // test("GET 请求会被缓存", async () => {
-    //   const api = {
-    //     baseURL,
-    //     url: "/posts/",
-    //     enableCache: true,
-    //     params: {
-    //       id: 1
-    //     }
-    //   }
-    //   const responseData = await apiSharp.request(api)
-    //   const _api = apiSharp.processApi(api)
-    //   const cachedKey = apiSharp.generateCachedKey(_api)
-    //   const cachedPromise = apiSharp.cache.get(cachedKey)
-    //   expect(cachedPromise).toBeInstanceOf(Promise)
-    //   const cachedData = (await cachedPromise).data
-    //   expect(responseData).toEqual(cachedData)
-    // })
-    // test("POST 请求不会被缓存", async () => {
-    //   const api = {
-    //     url: "http://localhost:4000/posts/",
-    //     method: "POST",
-    //     enableCache: true,
-    //     params: mockPost()
-    //   }
-    //   const data = await apiSharp.request(api)
-    //   await deletePost(data.id)
-    //   const _api = apiSharp.processApi(api)
-    //   const cachedKey = apiSharp.generateCachedKey(_api)
-    //   const cachedPromise = apiSharp.cache.get(cachedKey)
-    //   expect(cachedPromise).toBeUndefined()
-    // })
-    // test("相同请求参数的 GET 请求会被缓存", async () => {
-    //   const id = 2
-    //   const apiDescriptor = {
-    //     url: "http://localhost:4000/posts/",
-    //     enableCache: true,
-    //     params: {
-    //       id
-    //     }
-    //   }
-    //   const [responsePost] = await apiSharp.request(apiDescriptor)
-    //   debugger
-    //   await deletePost(responsePost.id)
-    //   const [cachedPost] = await apiSharp.request(apiDescriptor)
-    //   const dbPost = serverData.posts.find(post => post.id === id)
-    //   expect(responsePost).toEqual(dbPost)
-    //   expect(responsePost).toEqual(cachedPost)
-    // })
+    beforeEach(() => {
+      apiSharp.clearCache()
+    })
+    test("POST 请求不会被缓存，当开启或开闭缓存时", async () => {
+      const api = {
+        baseURL,
+        url: "/posts/",
+        method: "POST",
+        enableCache: true,
+        params: mockOnePost()
+      }
+      const firstResponse = await apiSharp.request(api)
+      expect(firstResponse.from).toBe('network')
+      const secondResponse = await apiSharp.request({...api, enableCache: false})
+      expect(secondResponse.from).toBe('network')
+    })
+    test("GET 请求不会被缓存，当关闭缓存时", async () => {
+      const newPost = mockOnePost()
+      const response = await requestPostPost(newPost)
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: false,
+        params: {
+          id: response.data.id
+        }
+      }
+      const firstResponse = await apiSharp.request(api)
+      const secondResponse = await apiSharp.request(api)
+      expect(firstResponse.from).toBe("network")
+      expect(secondResponse.from).toBe("network")
+    })
+    test("GET 请求会被缓存，当开启缓存且请求的地址和参数相同时", async () => {
+      const newPost = mockOnePost()
+      const response = await requestPostPost(newPost)
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: true,
+        params: {
+          id: response.data.id
+        }
+      }
+      const firstResponse = await apiSharp.request(api)
+      const secondResponse = await apiSharp.request(api)
+      expect(firstResponse.from).toBe("network")
+      expect(secondResponse.from).toBe("cache")
+    })
+    test("GET 请求不会被缓存，当开启缓存且请求的地址不同时", async () => {
+      const newPost = mockOnePost()
+      const response = await requestPostPost(newPost)
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: true,
+        params: {
+          id: response.data.id
+        }
+      }
+      const firstResponse = await apiSharp.request(api)
+      const secondResponse = await apiSharp.request({...api, url: "/posts/?a=1"})
+      expect(firstResponse.from).toBe("network")
+      expect(secondResponse.from).toBe("network")
+    })
+    test("GET 请求不会被缓存，当开启缓存且请求的参数不同时", async () => {
+      const newPost = mockOnePost()
+      const response = await requestPostPost(newPost)
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: true,
+        params: {
+          id: response.data.id
+        }
+      }
+      const firstResponse = await apiSharp.request(api)
+      const secondResponse = await apiSharp.request({...api, params: {id: response.data.id + 1}})
+      expect(firstResponse.from).toBe("network")
+      expect(secondResponse.from).toBe("network")
+    })
   })
 })

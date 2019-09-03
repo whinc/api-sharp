@@ -14,15 +14,25 @@ export type HTTPMethod =
   | 'patch'
   | 'PATCH';
 
+export type ReturnTypeFn<T> = (api: ApiDescriptor) => T
+
 export interface ApiDescriptor {
   url: string;
   baseURL?: string;
   method?: HTTPMethod;
-  description?: string | ((api: ApiDescriptor) => string);
+  description?: string | ReturnTypeFn<string>
   params?: Object;
   paramTypes?: Object;
-  enableCache?: boolean | ((api: ApiDescriptor) => boolean);
-  enableMock?: boolean | ((api: ApiDescriptor) => boolean);
+  /**
+   * 开启缓存，默认关闭
+   */
+  enableCache?: boolean | ReturnTypeFn<boolean>;
+  /**
+   * 缓存持续时间(单位毫秒)
+   * 下次取缓存时，如果缓存已存在的的时间超过该值，则对应缓存失效
+   */
+  cacheTime: number | ReturnTypeFn<number>;
+  enableMock?: boolean | ReturnTypeFn<boolean>
 }
 
 export interface PreprocessedApiDescriptor {}

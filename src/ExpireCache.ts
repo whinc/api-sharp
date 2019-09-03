@@ -60,4 +60,8 @@ export default class ExpireCache<V> implements ICache<V> {
     this.cacheMap.set(key, itemCache);
     return data;
   }
+  
+  clear () {
+    return this.cacheMap.clear()
+  }
 }
