@@ -1,6 +1,7 @@
 import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
 import { ApiDescriptor, HTTPMethod } from "./ApiDescriptor"
 import invariant from "tiny-invariant"
+import warning from "tiny-warning"
 import { isString, isFunction, getSortedString } from "./utils"
 import ICache from "./ICache"
 import ExpireCache from "./ExpireCache"
@@ -9,6 +10,10 @@ export interface ApiSharpOptions {
   axios?: AxiosStatic
   cache?: ICache
   enableLog?: boolean
+}
+
+export interface ApiSharpResponse<T> {
+  data: T
 }
 
 export class ApiSharp {
@@ -22,7 +27,7 @@ export class ApiSharp {
     this.cache = options.cache || new ExpireCache<Promise<AxiosResponse>>()
   }
 
-  async request(api: ApiDescriptor) {
+  async request(api: ApiDescriptor): Promise<ApiSharpResponse<any>> {
     api = this.processApi(api)
 
     this.logRequest(api)
@@ -73,7 +78,7 @@ export class ApiSharp {
       this.logResponse(api, res.data)
     }
 
-    return res.data
+    return { data: res.data }
   }
 
   private sendRequest(api: ApiDescriptor): Promise<AxiosResponse> {
@@ -122,7 +127,12 @@ export class ApiSharp {
       _api.description = api.description
     }
 
-    // _cgi.enableCache = utils.isFunction(api.enableCache) ? api.enableCache.call(null, api) : !!api.enableCache
+    _api.enableCache = isFunction(api.enableCache) ? api.enableCache.call(null, api) : !!api.enableCache
+
+    if (_api.method !== "GET" && _api.enableCache) {
+      _api.enableCache = false
+      warning(true, `只有 GET 请求支持开启缓存，当前请求方法为 ${_api.method}，自动关闭改接口的缓存`)
+    }
 
     return _api
   }

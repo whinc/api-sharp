@@ -12,7 +12,7 @@
     "build": "tsdx build",
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
-    "server": "json-server -p 4000 db.json",
+    "server": "json-server -p 4000 ./db.json",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "semantic-release": "semantic-release"
   },
@@ -48,10 +48,22 @@
     "xhr2": "^0.2.0"
   },
   "dependencies": {
-    "tiny-invariant": "^1.0.6"
+    "tiny-invariant": "^1.0.6",
+    "tiny-warning": "^1.0.3"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/whinc/api-sharp.git"
+  },
+  "jest": {
+    "globals": {
+      "__DEV__": true
+    },
+    "testMatch": [
+      "<rootDir>/test/*.test.ts"
+    ],
+    "watchPathIgnorePatterns": [
+      "<rootDir>/[^/]+\\.\\w+$"
+    ]
   }
 }
