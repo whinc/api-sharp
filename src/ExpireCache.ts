@@ -1,67 +1,67 @@
-import ICache from './ICache';
+import ICache from "./ICache"
 
 class ExpireCacheItem<V> {
-  public data: V;
-  public timeout: number;
-  public cacheTime: number;
+  public data: V
+  public timeout: number
+  public cacheTime: number
 
   constructor(data: V, timeout: number) {
-    this.data = data;
-    this.timeout = timeout;
+    this.data = data
+    this.timeout = timeout
     // 创建对象时候的时间，大约设定为数据获得的时间
-    this.cacheTime = Date.now();
+    this.cacheTime = Date.now()
   }
 }
 
 export default class ExpireCache<V> implements ICache<V> {
-  private readonly cacheMap = new Map<string, ExpireCacheItem<V>>();
-  private readonly defaultCacheTime;
+  private readonly cacheMap = new Map<string, ExpireCacheItem<V>>()
+  private readonly defaultCacheTime
 
   constructor(defaultCacheTime = 5 * 60 * 1000) {
-    this.defaultCacheTime = defaultCacheTime;
+    this.defaultCacheTime = defaultCacheTime
   }
 
   // 数据是否超时
   isOverTime(key: string) {
-    const data = this.cacheMap.get(key);
+    const data = this.cacheMap.get(key)
 
-    if (!data) return true;
+    if (!data) return true
 
-    const overTime = Date.now() - data.cacheTime;
+    const overTime = Date.now() - data.cacheTime
     if (overTime > 0 && overTime > data.timeout) {
-      this.cacheMap.delete(key);
-      return true;
+      this.cacheMap.delete(key)
+      return true
     }
 
-    return false;
+    return false
   }
 
   has(key) {
-    return !this.isOverTime(key);
+    return !this.isOverTime(key)
   }
 
   delete(key: string) {
-    return this.cacheMap.delete(key);
+    return this.cacheMap.delete(key)
   }
 
   get(key) {
     if (this.isOverTime(key)) {
-      return undefined;
+      return undefined
     }
-    const value = this.cacheMap.get(key);
+    const value = this.cacheMap.get(key)
     if (!value) {
-      return undefined;
+      return undefined
     }
-    return value.data;
+    return value.data
   }
 
-  set(key, data, timeout = this.defaultCacheTime) {
-    const itemCache = new ExpireCacheItem(data, timeout);
-    this.cacheMap.set(key, itemCache);
-    return data;
+  set(key, data, { timeout = this.defaultCacheTime } = {}) {
+    const itemCache = new ExpireCacheItem(data, timeout)
+    this.cacheMap.set(key, itemCache)
+    return data
   }
-  
-  clear () {
+
+  clear() {
     return this.cacheMap.clear()
   }
 }

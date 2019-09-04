@@ -46,6 +46,10 @@ function mockOnePost() {
   return { title: "post", author: "jack", date: Date.now() }
 }
 
+afterAll(async () => {
+  await clearDB()
+})
+
 describe("测试 ApiSharp.processApi() 方法", () => {
   describe("测试 api 的取值", () => {
     test("api === null 时抛出异常", () => {
@@ -102,9 +106,10 @@ describe("测试 ApiSharp.processApi() 方法", () => {
 
 describe("测试 ApiSharp.request()", () => {
   beforeEach(async () => {
+    // 清除数据
     await clearDB()
   })
-  describe("测试请求", () => {
+  describe("测试一般请求", () => {
     test("POST 请求正常", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
@@ -120,6 +125,7 @@ describe("测试 ApiSharp.request()", () => {
   })
   describe("测试缓存", () => {
     beforeEach(() => {
+      // 清除缓存
       apiSharp.clearCache()
     })
     test("POST 请求不会被缓存，当开启或开闭缓存时", async () => {
@@ -131,9 +137,9 @@ describe("测试 ApiSharp.request()", () => {
         params: mockOnePost()
       }
       const firstResponse = await apiSharp.request(api)
-      expect(firstResponse.from).toBe('network')
-      const secondResponse = await apiSharp.request({...api, enableCache: false})
-      expect(secondResponse.from).toBe('network')
+      expect(firstResponse.from).toBe("network")
+      const secondResponse = await apiSharp.request({ ...api, enableCache: false })
+      expect(secondResponse.from).toBe("network")
     })
     test("GET 请求不会被缓存，当关闭缓存时", async () => {
       const newPost = mockOnePost()
@@ -179,7 +185,7 @@ describe("测试 ApiSharp.request()", () => {
         }
       }
       const firstResponse = await apiSharp.request(api)
-      const secondResponse = await apiSharp.request({...api, url: "/posts/?a=1"})
+      const secondResponse = await apiSharp.request({ ...api, url: "/posts/?a=1" })
       expect(firstResponse.from).toBe("network")
       expect(secondResponse.from).toBe("network")
     })
@@ -195,8 +201,40 @@ describe("测试 ApiSharp.request()", () => {
         }
       }
       const firstResponse = await apiSharp.request(api)
-      const secondResponse = await apiSharp.request({...api, params: {id: response.data.id + 1}})
+      const secondResponse = await apiSharp.request({ ...api, params: { id: response.data.id + 1 } })
       expect(firstResponse.from).toBe("network")
+      expect(secondResponse.from).toBe("network")
+    })
+    test("GET 请求命中缓存，当开启缓存并且在缓存期内", async () => {
+      const newPost = mockOnePost()
+      const response = await requestPostPost(newPost)
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: true,
+        params: {
+          id: response.data.id
+        }
+      }
+      const firstResponse = await apiSharp.request({ ...api, cacheTime: Infinity })
+      expect(firstResponse.from).toBe("network")
+      const secondResponse = await apiSharp.request(api)
+      expect(secondResponse.from).toBe("cache")
+    })
+    test("GET 请求不命中缓存，当开启缓存并且超出缓存期", async () => {
+      const newPost = mockOnePost()
+      const response = await requestPostPost(newPost)
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: true,
+        params: {
+          id: response.data.id
+        }
+      }
+      const firstResponse = await apiSharp.request({ ...api, cacheTime: 0 })
+      expect(firstResponse.from).toBe("network")
+      const secondResponse = await apiSharp.request(api)
       expect(secondResponse.from).toBe("network")
     })
   })

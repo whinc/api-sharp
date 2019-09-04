@@ -1,5 +1,5 @@
 import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
-import { ApiDescriptor, HTTPMethod } from "./ApiDescriptor"
+import { ApiDescriptor, HTTPMethod, ProcessedApiDescriptor } from "./ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import { isString, isFunction, getSortedString, isUndefined, isNumber } from "./utils"
@@ -17,8 +17,8 @@ export interface ApiSharpResponse<T> {
   from: "cache" | "network"
 }
 
-const defaultMethod = 'GET'
-const defaultDescription = ''
+const defaultMethod = "GET"
+const defaultDescription = ""
 const defaultCacheTime = 5 * 1000
 
 export class ApiSharp {
@@ -35,8 +35,8 @@ export class ApiSharp {
   /**
    * 发送请求
    */
-  async request(api: ApiDescriptor): Promise<ApiSharpResponse<any>> {
-    api = this.processApi(api)
+  async request(_api: ApiDescriptor): Promise<ApiSharpResponse<any>> {
+    const api = this.processApi(_api)
 
     this.logRequest(api)
 
@@ -45,14 +45,16 @@ export class ApiSharp {
     let hitCache = false
 
     if (api.enableCache) {
+      // 开启了缓存
       cachedKey = this.generateCachedKey(api)
       if (this.cache.has(cachedKey)) {
+        // 命中缓存
         requestPromise = this.cache.get(cachedKey)!
         hitCache = true
       } else {
         requestPromise = this.sendRequest(api)
         hitCache = false
-        this.cache.set(cachedKey, requestPromise)
+        this.cache.set(cachedKey, requestPromise, { timeout: api.cacheTime })
       }
     } else {
       requestPromise = this.sendRequest(api)
@@ -92,7 +94,7 @@ export class ApiSharp {
   /**
    * 清除全部缓存
    */
-  public clearCache () {
+  public clearCache() {
     return this.cache.clear()
   }
 
@@ -107,13 +109,13 @@ export class ApiSharp {
   }
 
   private generateCachedKey(api: ApiDescriptor) {
-    return `${api.baseURL}${api.url}:${api.method}:${getSortedString(api.params)}`
+    return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.params)}`
   }
 
-  private processApi(api: ApiDescriptor): ApiDescriptor {
+  private processApi(api: ApiDescriptor): ProcessedApiDescriptor {
     invariant(api, "api 为空")
 
-    const _api = { ...api }
+    const _api = { ...api } as ProcessedApiDescriptor
 
     // 移除首部多余分隔符
     if (isString(api.url) && !!api.url) {
@@ -128,10 +130,10 @@ export class ApiSharp {
     // 请求方法
     if (isUndefined(api.method)) {
       _api.method = defaultMethod
-    } else if (isString(api.method) && /get|post|delete|head|options|put|patch/i.test(api.method)){
+    } else if (isString(api.method) && /get|post/i.test(api.method)) {
       _api.method = api.method.toUpperCase() as HTTPMethod
     } else {
-      invariant(false, `method 期望值为 get|post|delete|head|options|put|patch 其一，实际值为"${api.method}"`)
+      invariant(false, `method 期望值为 get|post 其一，实际值为"${api.method}"`)
     }
 
     // 描述
