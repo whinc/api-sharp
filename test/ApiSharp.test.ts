@@ -59,13 +59,11 @@ describe("测试 ApiSharp.processApi() 方法", () => {
   })
 
   describe("测试 api.url 取值", () => {
-    test('typeof api.url !== "string" 时抛出异常', () => {
-      const api: any = { url: 100 }
-      expect(() => apiSharp.processApi(api)).toThrow()
-    })
-    test('api.url === "" 时抛出异常', () => {
-      const api = { url: "" }
-      expect(() => apiSharp.processApi(api)).toThrow()
+    test("api.url 为空(空串/undefined/null)时抛出异常", () => {
+      const api = {}
+      expect(() => apiSharp.processApi({ ...api, url: undefined })).toThrow()
+      expect(() => apiSharp.processApi({ ...api, url: null })).toThrow()
+      expect(() => apiSharp.processApi({ ...api, url: "" })).toThrow()
     })
   })
 
@@ -102,12 +100,41 @@ describe("测试 ApiSharp.processApi() 方法", () => {
       expect(apiSharp.processApi(api).description).toBe(expected)
     })
   })
+
+  describe("测试 api.enableMock 取值", () => {
+    const api: ApiDescriptor = { url: baseURL }
+    test("api.enableMock  默认为 false", () => {
+      expect(apiSharp.processApi(api).enableMock).toBeFalsy()
+    })
+    test("api.enableMock 为 true，当设置为 true 后", () => {
+      expect(apiSharp.processApi({ ...api, enableMock: true }).enableMock).toBeTruthy()
+    })
+    test("api.enableMock 为 true，当设置为 () => true 后", () => {
+      expect(apiSharp.processApi({ ...api, enableMock: () => true }).enableMock).toBeTruthy()
+    })
+  })
+
+  describe("测试 api.mockData 取值", () => {
+    const api: ApiDescriptor = { url: baseURL }
+    const data = { a: 1 }
+    test("api.mockData 默认为 undefined", () => {
+      expect(apiSharp.processApi(api).mockData).toBeUndefined()
+    })
+    test(`api.mockData 为 ${JSON.stringify(data)}，当设置为 ${JSON.stringify(data)} 后`, () => {
+      expect(apiSharp.processApi({ ...api, mockData: data }).mockData).toEqual(data)
+    })
+    test(`api.mockData 为 ${JSON.stringify(data)}，当设置为 () => (${JSON.stringify(data)}) 后`, () => {
+      expect(apiSharp.processApi({ ...api, mockData: () => data }).mockData).toEqual(data)
+    })
+  })
 })
 
 describe("测试 ApiSharp.request()", () => {
   beforeEach(async () => {
     // 清除数据
     await clearDB()
+    // 清除缓存
+    apiSharp.clearCache()
   })
   describe("测试一般请求", () => {
     test("POST 请求正常", async () => {
@@ -124,10 +151,6 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
   describe("测试缓存", () => {
-    beforeEach(() => {
-      // 清除缓存
-      apiSharp.clearCache()
-    })
     test("POST 请求不会被缓存，当开启或开闭缓存时", async () => {
       const api = {
         baseURL,
@@ -236,6 +259,39 @@ describe("测试 ApiSharp.request()", () => {
       expect(firstResponse.from).toBe("network")
       const secondResponse = await apiSharp.request(api)
       expect(secondResponse.from).toBe("network")
+    })
+  })
+  describe("测试数据mock", () => {
+    test("返回mock数据，当开启mock", async () => {
+      const data = "hello"
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: true,
+        params: {
+          id: 1
+        },
+        enableMock: true,
+        mockData: data
+      }
+      const response = await apiSharp.request(api)
+      expect(response.from).toBe("mock")
+      expect(response.data).toEqual(data)
+    })
+    test("返回网络数据，当关闭mock", async () => {
+      const data = "hello"
+      const api = {
+        baseURL,
+        url: "/posts/",
+        enableCache: true,
+        params: {
+          id: 1
+        },
+        enableMock: false,
+        mockData: data
+      }
+      const response = await apiSharp.request(api)
+      expect(response.from).toBe("network")
     })
   })
 })

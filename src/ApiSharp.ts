@@ -14,11 +14,14 @@ export interface ApiSharpOptions {
 
 export interface ApiSharpResponse<T> {
   data: T
-  from: "cache" | "network"
+  from: "cache" | "network" | "mock"
 }
 
+const defaultEnableMock = false
+const defaultMockData = undefined
 const defaultMethod = "GET"
 const defaultDescription = ""
+const defaultEnableCache = false
 const defaultCacheTime = 5 * 1000
 
 export class ApiSharp {
@@ -39,6 +42,10 @@ export class ApiSharp {
     const api = this.processApi(_api)
 
     this.logRequest(api)
+
+    if (api.enableMock) {
+      return { data: api.mockData, from: "mock" }
+    }
 
     let requestPromise: Promise<AxiosResponse>
     let cachedKey
@@ -118,10 +125,10 @@ export class ApiSharp {
     const _api = { ...api } as ProcessedApiDescriptor
 
     // 移除首部多余分隔符
-    if (isString(api.url) && !!api.url) {
-      _api.url = api.url.replace(/^\/{2,}/, "/")
+    if (!api.url || !String(api.url)) {
+      invariant(false, `url 为空`)
     } else {
-      invariant(false, `url 期望类型为 string，实际值为"${api.url}"`)
+      _api.url = String(api.url)
     }
 
     // 移除尾部多余分隔符
@@ -140,16 +147,19 @@ export class ApiSharp {
     if (isUndefined(api.description)) {
       _api.description = defaultDescription
     } else if (isFunction(api.description)) {
-      _api.description = api.description.call(null, api)
-    } else if (isString(api.description)) {
-      _api.description = api.description
+      _api.description = String(api.description.call(null, api))
     } else {
-      invariant(false, `description 期望类型为 string/function，实际值为"${api.description}"`)
+      _api.description = String(api.description)
     }
 
     // 开启缓存
-    _api.enableCache = isFunction(api.enableCache) ? api.enableCache.call(null, api) : !!api.enableCache
-
+    if (isUndefined(api.enableCache)) {
+      _api.enableCache = defaultEnableCache
+    } else if (isFunction(api.enableCache)) {
+      _api.enableCache = !!api.enableCache.call(null, api)
+    } else {
+      _api.enableCache = !!api.enableCache
+    }
     if (_api.method !== "GET" && _api.enableCache) {
       _api.enableCache = false
       warning(false, `只有 GET 请求支持开启缓存，当前请求方法为"${_api.method}"，缓存开启不会生效`)
@@ -163,7 +173,32 @@ export class ApiSharp {
     } else if (isFunction(api.cacheTime)) {
       _api.cacheTime = api.cacheTime.call(null, api)
     } else {
-      invariant(false, `cacheTime 期望是 number/function 类型，实际值是"${api.cacheTime}"`)
+      _api.cacheTime = defaultCacheTime
+      warning(false, `cacheTime 期望 number/function 类型，实际类型为${typeof api.cacheTime}，自动使用默认值`)
+    }
+
+    if (isUndefined(api.enableCache)) {
+      _api.enableMock = defaultEnableMock
+    } else if (isFunction(api.enableMock)) {
+      _api.enableMock = !!api.enableMock.call(null, api)
+    } else {
+      _api.enableMock = !!api.enableMock
+    }
+
+    if (isUndefined(api.enableMock)) {
+      _api.enableMock = defaultEnableMock
+    } else if (isFunction(api.enableMock)) {
+      _api.enableMock = !!api.enableMock.call(null, api)
+    } else {
+      _api.enableMock = !!api.enableMock
+    }
+
+    if (isUndefined(api.mockData)) {
+      _api.mockData = defaultMockData
+    } else if (isFunction(api.mockData)) {
+      _api.mockData = api.mockData.call(null, api)
+    } else {
+      _api.mockData = api.mockData
     }
 
     return _api

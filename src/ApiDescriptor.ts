@@ -54,9 +54,12 @@ export interface ApiDescriptor {
   cacheTime?: number | ReturnTypeFn<number>
   /**
    * 开启数据模拟，默认关闭
-   * TODO:
    */
   enableMock?: boolean | ReturnTypeFn<boolean>
+  /**
+   * 模拟接口返回的数据，默认 undefined
+   */
+  mockData?: any | ReturnTypeFn<any>
 }
 
 export interface ProcessedApiDescriptor {
@@ -69,4 +72,5 @@ export interface ProcessedApiDescriptor {
   enableCache?: boolean
   cacheTime?: number
   enableMock?: boolean
+  mockData?: any
 }
