@@ -19,6 +19,9 @@
 - 支持数据模拟
   - enableMock
   - mockData
+- 支持失败重试
+  - enableRetry
+  - retryTimes
 
 ## 贡献
 

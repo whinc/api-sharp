@@ -60,17 +60,29 @@ export interface ApiDescriptor {
    * 模拟接口返回的数据，默认 undefined
    */
   mockData?: any | ReturnTypeFn<any>
+  /**
+   * 开启失败重试，默认关闭
+   */
+  enableRetry?: boolean | ReturnTypeFn<boolean>
+  /**
+   * 重试最大次数，默认 1 次
+   */
+  retryTimes?: number | ReturnTypeFn<number>
+  [name: string]: any
 }
 
 export interface ProcessedApiDescriptor {
   url: string
-  baseURL?: string
-  method?: HTTPMethod
-  description?: string
-  params?: Object
-  paramTypes?: Object
-  enableCache?: boolean
-  cacheTime?: number
-  enableMock?: boolean
-  mockData?: any
+  baseURL: string
+  method: HTTPMethod
+  description: string
+  params: Object
+  paramTypes: Object
+  enableCache: boolean
+  cacheTime: number
+  enableMock: boolean
+  mockData: any
+  enableRetry: boolean
+  retryTimes: number
+  [name: string]: any
 }

@@ -14,6 +14,7 @@ export interface ApiSharpOptions {
 
 export interface ApiSharpResponse<T> {
   data: T
+  api: ProcessedApiDescriptor,
   from: "cache" | "network" | "mock"
 }
 
@@ -23,6 +24,8 @@ const defaultMethod = "GET"
 const defaultDescription = ""
 const defaultEnableCache = false
 const defaultCacheTime = 5 * 1000
+const defaultEnableRetry = false
+const defaultRetryTimes = 1
 
 export class ApiSharp {
   private axios: AxiosInstance
@@ -44,7 +47,7 @@ export class ApiSharp {
     this.logRequest(api)
 
     if (api.enableMock) {
-      return { data: api.mockData, from: "mock" }
+      return { data: api.mockData, from: "mock", api }
     }
 
     let requestPromise: Promise<AxiosResponse>
@@ -75,9 +78,13 @@ export class ApiSharp {
       if (api.enableCache) {
         this.cache.delete(cachedKey)
       }
-      this.logErrorResponse(api, null)
-      // 重新抛出错误
-      throw err
+      if (api.enableRetry && api.retryTimes >= 1) {
+        return this.request({...api, retryTimes: api.retryTimes - 1, __retry: true})
+      } else {
+        this.logErrorResponse(api, null)
+        err.api = api
+        throw err
+      }
     }
 
     const checkResult = this.checkResponseData(res.data)
@@ -85,8 +92,14 @@ export class ApiSharp {
       if (api.enableCache) {
         this.cache.delete(cachedKey)
       }
-      this.logErrorResponse(api, res.data)
-      throw new Error(checkResult.errMsg)
+      if (api.enableRetry && api.retryTimes >= 1) {
+        return this.request({...api, retryTimes: api.retryTimes - 1, __retry: true})
+      } else {
+        this.logErrorResponse(api, res.data)
+        const err = new Error(checkResult.errMsg)
+        err['api'] = api
+        throw err
+      }
     }
 
     if (hitCache) {
@@ -95,7 +108,7 @@ export class ApiSharp {
       this.logResponse(api, res.data)
     }
 
-    return { data: res.data, from: hitCache ? "cache" : "network" }
+    return { data: res.data, from: hitCache ? "cache" : "network", api }
   }
 
   /**
@@ -199,6 +212,25 @@ export class ApiSharp {
       _api.mockData = api.mockData.call(null, api)
     } else {
       _api.mockData = api.mockData
+    }
+
+    if (isUndefined(api.enableRetry)) {
+      _api.enableRetry = defaultEnableRetry
+    } else if (isFunction(api.enableRetry)) {
+      _api.enableRetry = !!api.enableRetry.call(null, api)
+    } else {
+      _api.enableRetry = !!api.enableRetry
+    }
+
+    if (isUndefined(api.retryTimes)) {
+      _api.retryTimes = defaultRetryTimes
+    } else if (isNumber(api.retryTimes)) {
+      _api.retryTimes = api.retryTimes
+    } else if (isFunction(api.retryTimes)) {
+      _api.retryTimes = api.retryTimes.call(null, api)
+    } else {
+      _api.retryTimes = defaultRetryTimes
+      warning(false, `retryTimes 期望 number/function 类型，实际类型为${typeof api.retryTimes}，自动使用默认值`)
     }
 
     return _api

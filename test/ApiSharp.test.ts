@@ -127,6 +127,26 @@ describe("测试 ApiSharp.processApi() 方法", () => {
       expect(apiSharp.processApi({ ...api, mockData: () => data }).mockData).toEqual(data)
     })
   })
+
+  describe("测试 api.enableRetry 取值", () => {
+    const api: ApiDescriptor = { url: baseURL }
+    test("api.enableRetry 默认为 false", () => {
+      expect(apiSharp.processApi(api).enableRetry ).toBeFalsy()
+    })
+    test("api.enableRetry 为 true，当设置为 true 后", () => {
+      expect(apiSharp.processApi({ ...api, enableRetry : true }).enableRetry).toBeTruthy()
+    })
+    test("api.enableRetry 为 true，当设置为 () => true 后", () => {
+      expect(apiSharp.processApi({ ...api, enableRetry : () => true }).enableRetry).toBeTruthy()
+    })
+  })
+
+  describe("测试 api.retryTimes 取值", () => {
+    const api: ApiDescriptor = { url: baseURL }
+    test("api.retryTimes 默认为 1", () => {
+      expect(apiSharp.processApi(api).retryTimes).toBe(1)
+    })
+  })
 })
 
 describe("测试 ApiSharp.request()", () => {
@@ -292,6 +312,35 @@ describe("测试 ApiSharp.request()", () => {
       }
       const response = await apiSharp.request(api)
       expect(response.from).toBe("network")
+    })
+  })
+
+  describe('测试失败重试', () => {
+    test('请求失败不会重试，当关闭失败重试时', async () => {
+      // 构造一个不存在的地址，触发请求失败
+      const api = {
+        baseURL,
+        url: "/posts-any/",
+        enableRetry: false
+      }
+      try {
+        await apiSharp.request(api)
+      } catch(err) {
+        expect(err.api.__retry).toBeFalsy()
+      }
+    })
+    test('请求失败会重试，当开启失败重试时', async () => {
+      // 构造一个不存在的地址，触发请求失败
+      const api = {
+        baseURL,
+        url: "/posts-any/",
+        enableRetry: true
+      }
+      try {
+        await apiSharp.request(api)
+      } catch(err) {
+        expect(err.api.__retry).toBeTruthy()
+      }
     })
   })
 })
