@@ -344,3 +344,74 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
 })
+
+describe.only('测试打印日志', () => {
+  let logArgs: null | any[] = null
+  beforeAll(() => {
+    const originLog = console.log
+    console.log = function (...args) {
+      originLog.call(this, ...args)
+      logArgs = args
+    }
+  })
+  beforeEach(() => {
+    logArgs = null
+  })
+  test('不打印日志，当关闭日志时', async () => {
+    try {
+      const api = {
+        baseURL,
+        url: "/posts/",
+        params: {
+          id: 1
+        },
+        // 关闭日志
+        enableLog: false
+      }
+      await apiSharp.request(api)
+    } catch (err) {
+
+    }
+    expect(logArgs).toBeNull()
+  })
+  test('打印日志，当开启日志时', async () => {
+    try {
+      const api = {
+        baseURL,
+        url: "/posts/",
+        params: {
+          id: 1
+        },
+        // 开启日志
+        enableLog: true
+      }
+      await apiSharp.request(api)
+    } catch (err) {
+
+    }
+    expect(logArgs).toBeInstanceOf(Array)
+  }),
+  test('按自定义格式打印日志，当开启日志并设置了自定义格式化方法时', async () => {
+    try {
+      const api = {
+        baseURL,
+        url: "/posts/",
+        params: {
+          id: 1
+        },
+        // 开启日志
+        enableLog: true,
+        logFormatter: {
+          logRequest: () => console.log('hello'),
+          logResponse: () => console.log('hello'),
+          logResponseError: () => console.log('hello'),
+          logResponseCache: () => console.log('hello'),
+        }
+      }
+      await apiSharp.request(api)
+    } catch (err) {
+
+    }
+    expect(logArgs).toEqual(['hello'])
+  })
+})

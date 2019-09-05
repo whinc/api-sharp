@@ -2,7 +2,7 @@ import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
 import { ApiDescriptor, HTTPMethod, ProcessedApiDescriptor } from "./ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
-import { isString, isFunction, getSortedString, isUndefined, isNumber } from "./utils"
+import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject } from "./utils"
 import ICache from "./ICache"
 import ExpireCache from "./ExpireCache"
 
@@ -14,7 +14,7 @@ export interface ApiSharpOptions {
 
 export interface ApiSharpResponse<T> {
   data: T
-  api: ProcessedApiDescriptor,
+  api: ProcessedApiDescriptor
   from: "cache" | "network" | "mock"
 }
 
@@ -32,14 +32,60 @@ const defaultEnableCache = false
 const defaultCacheTime = 5 * 1000
 const defaultEnableRetry = false
 const defaultRetryTimes = 1
+const defaultEnableLog = process.env.NODE_ENV !== "production"
+const defaultLogFormatter = {
+  logRequest: (api: ProcessedApiDescriptor) => {
+    console.log(
+      `%cRequest %c %c${api.method}|${api.description}|${api.url}%c|%O`,
+      "color: white; background-color: rgba(0, 116, 217, 0.69); padding: 2px 5px; border-radius: 2px",
+      "",
+      "color: #0074D9",
+      "",
+      api.params
+    )
+  },
+  logResponse: (api: ProcessedApiDescriptor, data: any) => {
+    console.log(
+      `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
+      "color: white; background-color: rgba(61, 153, 112, 0.69); padding: 2px 5px; border-radius: 2px",
+      "",
+      "color: #3D9970",
+      "",
+      api.params,
+      data
+    )
+  },
+  logResponseError: (_error: Error, api: ProcessedApiDescriptor, data: any) => {
+    console.log(
+      `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
+      "color: white; background-color: rgba(255, 65, 54, 0.69); padding: 2px 5px; border-radius: 2px",
+      "",
+      "color: #FF4136",
+      "",
+      api.params,
+      data
+    )
+  },
+  logResponseCache: (api: ProcessedApiDescriptor, data: any) => {
+    console.log(
+      `%cResponse Cache %c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
+      "color: white; background-color: rgba(177, 13, 201, 0.69); padding: 2px 5px; border-radius: 2px",
+      "",
+      "color: #B10DC9",
+      "",
+      api.params,
+      data
+    )
+  }
+}
 
 export class ApiSharp {
   private axios: AxiosInstance
   private cache: ICache<Promise<AxiosResponse>>
-  private enableLog: boolean
+  // private enableLog: boolean
 
   constructor(options: ApiSharpOptions = {}) {
-    this.enableLog = options.enableLog !== undefined ? !!options.enableLog : true
+    // this.enableLog = options.enableLog !== undefined ? !!options.enableLog : true
     this.axios = options.axios || axios.create()
     this.cache = options.cache || new ExpireCache<Promise<AxiosResponse>>()
   }
@@ -85,9 +131,9 @@ export class ApiSharp {
         this.cache.delete(cachedKey)
       }
       if (api.enableRetry && api.retryTimes >= 1) {
-        return this.request({...api, retryTimes: api.retryTimes - 1, __retry: true})
+        return this.request({ ...api, retryTimes: api.retryTimes - 1, __retry: true })
       } else {
-        this.logErrorResponse(api, null)
+        this.logResponseError(err, api)
         throw new ApiSharpRequestError(err.message, api)
       }
     }
@@ -98,15 +144,15 @@ export class ApiSharp {
         this.cache.delete(cachedKey)
       }
       if (api.enableRetry && api.retryTimes >= 1) {
-        return this.request({...api, retryTimes: api.retryTimes - 1, __retry: true})
+        return this.request({ ...api, retryTimes: api.retryTimes - 1, __retry: true })
       } else {
-        this.logErrorResponse(api, res.data)
+        this.logResponseError(new Error(checkResult.errMsg), api, res.data)
         throw new ApiSharpRequestError(checkResult.errMsg, api)
       }
     }
 
     if (hitCache) {
-      this.logHitCache(api, res.data)
+      this.logResponseCache(api, res.data)
     } else {
       this.logResponse(api, res.data)
     }
@@ -236,6 +282,27 @@ export class ApiSharp {
       warning(false, `retryTimes 期望 number/function 类型，实际类型为${typeof api.retryTimes}，自动使用默认值`)
     }
 
+    if (isUndefined(api.enableLog)) {
+      _api.enableLog = defaultEnableLog
+    } else if (isFunction(api.enableLog)) {
+      _api.enableLog = !!api.enableLog.call(null, api)
+    } else {
+      _api.enableLog = !!api.enableLog
+    }
+
+    if (isUndefined(api.logFormatter)) {
+      _api.logFormatter = defaultLogFormatter
+    } else if (isObject(api.logFormatter)) {
+      _api.logFormatter = {
+        logRequest: api.logFormatter.logRequest || defaultLogFormatter.logRequest,
+        logResponse: api.logFormatter.logResponse || defaultLogFormatter.logResponse,
+        logResponseError: api.logFormatter.logResponseError || defaultLogFormatter.logResponseError,
+        logResponseCache: api.logFormatter.logResponseCache || defaultLogFormatter.logResponseCache
+      }
+    } else {
+      _api.logFormatter = defaultLogFormatter
+    }
+
     return _api
   }
 
@@ -249,54 +316,19 @@ export class ApiSharp {
     }
   }
 
-  private logRequest(api: ApiDescriptor) {
-    this.enableLog &&
-      console.log(
-        `%cRequest %c %c${api.method}|${api.description}|${api.url}%c|%O`,
-        "color: white; background-color: rgba(0, 116, 217, 0.69); padding: 2px 5px; border-radius: 2px",
-        "",
-        "color: #0074D9",
-        "",
-        api.params
-      )
+  private logRequest(api: ProcessedApiDescriptor) {
+    api.enableLog && api.logFormatter.logRequest(api)
   }
 
-  private logResponse(api: ApiDescriptor, data) {
-    this.enableLog &&
-      console.log(
-        `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
-        "color: white; background-color: rgba(61, 153, 112, 0.69); padding: 2px 5px; border-radius: 2px",
-        "",
-        "color: #3D9970",
-        "",
-        api.params,
-        data
-      )
+  private logResponse(api: ProcessedApiDescriptor, data) {
+    api.enableLog && api.logFormatter.logResponse(api, data)
   }
 
-  private logErrorResponse(api: ApiDescriptor, data) {
-    this.enableLog &&
-      console.log(
-        `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
-        "color: white; background-color: rgba(255, 65, 54, 0.69); padding: 2px 5px; border-radius: 2px",
-        "",
-        "color: #FF4136",
-        "",
-        api.params,
-        data
-      )
+  private logResponseError(error: Error, api: ProcessedApiDescriptor, data?: any) {
+    api.enableLog && api.logFormatter.logResponseError(error, api, data)
   }
 
-  private logHitCache(api: ApiDescriptor, data) {
-    this.enableLog &&
-      console.log(
-        `%cResponse Cache %c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
-        "color: white; background-color: rgba(177, 13, 201, 0.69); padding: 2px 5px; border-radius: 2px",
-        "",
-        "color: #B10DC9",
-        "",
-        api.params,
-        data
-      )
+  private logResponseCache(api: ProcessedApiDescriptor, data) {
+    api.enableLog && api.logFormatter.logResponseCache(api, data)
   }
 }

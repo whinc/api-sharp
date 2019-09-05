@@ -14,6 +14,10 @@ export function isNumber(v: any): v is number {
   return typeof v === 'number'
 }
 
+export function isObject(v: any): v is Object {
+  return v !== null && typeof v === 'object'
+}
+
 /**
  * 对对象进行深度排序
  *

@@ -22,6 +22,9 @@
 - 支持失败重试
   - enableRetry
   - retryTimes
+- 支持自定义日志
+  - enableLog
+  - logFormatter
 
 ## 贡献
 

@@ -12,6 +12,13 @@ export type HTTPMethod = "get" | "GET" | "post" | "POST"
 
 export type ReturnTypeFn<T> = (api: ApiDescriptor) => T
 
+export interface LogFormatter {
+  logRequest(api: ProcessedApiDescriptor): void
+  logResponse(api: ProcessedApiDescriptor, data?: any): void
+  logResponseError(error: Error, api: ProcessedApiDescriptor, data?: any): void
+  logResponseCache(api: ProcessedApiDescriptor, data?: any): void
+}
+
 export interface ApiDescriptor {
   /**
    * 请求的 HTTP 地址，支持相对地址和绝对地址
@@ -68,6 +75,19 @@ export interface ApiDescriptor {
    * 重试最大次数，默认 1 次
    */
   retryTimes?: number | ReturnTypeFn<number>
+  /**
+   * 开启打印日志，默认为 process.env.NODE_ENV !== "production"
+   */
+  enableLog?: boolean | ReturnTypeFn<boolean>
+  /**
+   * 日志格式化
+   */
+  logFormatter?: LogFormatter
+
+  /**
+   * 其他用户自定义信息
+   * 这些信息会被保留下来
+   */
   [name: string]: any
 }
 
@@ -84,5 +104,7 @@ export interface ProcessedApiDescriptor {
   mockData: any
   enableRetry: boolean
   retryTimes: number
+  enableLog: boolean
+  logFormatter: LogFormatter
   [name: string]: any
 }
