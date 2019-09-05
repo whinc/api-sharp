@@ -316,7 +316,7 @@ describe("测试 ApiSharp.request()", () => {
   })
 
   describe('测试失败重试', () => {
-    test('请求失败不会重试，当关闭失败重试时', async () => {
+    test('请求失败不会重试，当关闭重试时', async () => {
       // 构造一个不存在的地址，触发请求失败
       const api = {
         baseURL,
@@ -329,7 +329,7 @@ describe("测试 ApiSharp.request()", () => {
         expect(err.api.__retry).toBeFalsy()
       }
     })
-    test('请求失败会重试，当开启失败重试时', async () => {
+    test('请求失败会重试，当开启重试时', async () => {
       // 构造一个不存在的地址，触发请求失败
       const api = {
         baseURL,

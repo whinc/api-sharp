@@ -18,6 +18,12 @@ export interface ApiSharpResponse<T> {
   from: "cache" | "network" | "mock"
 }
 
+export class ApiSharpRequestError extends Error {
+  constructor(message?: string, public api?: ProcessedApiDescriptor) {
+    super(message)
+  }
+}
+
 const defaultEnableMock = false
 const defaultMockData = undefined
 const defaultMethod = "GET"
@@ -82,8 +88,7 @@ export class ApiSharp {
         return this.request({...api, retryTimes: api.retryTimes - 1, __retry: true})
       } else {
         this.logErrorResponse(api, null)
-        err.api = api
-        throw err
+        throw new ApiSharpRequestError(err.message, api)
       }
     }
 
@@ -96,9 +101,7 @@ export class ApiSharp {
         return this.request({...api, retryTimes: api.retryTimes - 1, __retry: true})
       } else {
         this.logErrorResponse(api, res.data)
-        const err = new Error(checkResult.errMsg)
-        err['api'] = api
-        throw err
+        throw new ApiSharpRequestError(checkResult.errMsg, api)
       }
     }
 
