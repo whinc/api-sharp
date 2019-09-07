@@ -1,4 +1,5 @@
 import axios from "axios"
+import PropTypes from "prop-types"
 import { ApiSharp } from "../src/ApiSharp"
 import { ApiDescriptor } from "../src/ApiDescriptor"
 
@@ -131,13 +132,13 @@ describe("测试 ApiSharp.processApi() 方法", () => {
   describe("测试 api.enableRetry 取值", () => {
     const api: ApiDescriptor = { url: baseURL }
     test("api.enableRetry 默认为 false", () => {
-      expect(apiSharp.processApi(api).enableRetry ).toBeFalsy()
+      expect(apiSharp.processApi(api).enableRetry).toBeFalsy()
     })
     test("api.enableRetry 为 true，当设置为 true 后", () => {
-      expect(apiSharp.processApi({ ...api, enableRetry : true }).enableRetry).toBeTruthy()
+      expect(apiSharp.processApi({ ...api, enableRetry: true }).enableRetry).toBeTruthy()
     })
     test("api.enableRetry 为 true，当设置为 () => true 后", () => {
-      expect(apiSharp.processApi({ ...api, enableRetry : () => true }).enableRetry).toBeTruthy()
+      expect(apiSharp.processApi({ ...api, enableRetry: () => true }).enableRetry).toBeTruthy()
     })
   })
 
@@ -315,8 +316,8 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
 
-  describe('测试失败重试', () => {
-    test('请求失败不会重试，当关闭重试时', async () => {
+  describe("测试失败重试", () => {
+    test("请求失败不会重试，当关闭重试时", async () => {
       // 构造一个不存在的地址，触发请求失败
       const api = {
         baseURL,
@@ -325,11 +326,11 @@ describe("测试 ApiSharp.request()", () => {
       }
       try {
         await apiSharp.request(api)
-      } catch(err) {
+      } catch (err) {
         expect(err.api.__retry).toBeFalsy()
       }
     })
-    test('请求失败会重试，当开启重试时', async () => {
+    test("请求失败会重试，当开启重试时", async () => {
       // 构造一个不存在的地址，触发请求失败
       const api = {
         baseURL,
@@ -338,18 +339,18 @@ describe("测试 ApiSharp.request()", () => {
       }
       try {
         await apiSharp.request(api)
-      } catch(err) {
+      } catch (err) {
         expect(err.api.__retry).toBeTruthy()
       }
     })
   })
 })
 
-describe.only('测试打印日志', () => {
+describe("测试打印日志", () => {
   let logArgs: null | any[] = null
   beforeAll(() => {
     const originLog = console.log
-    console.log = function (...args) {
+    console.log = function(...args) {
       originLog.call(this, ...args)
       logArgs = args
     }
@@ -357,7 +358,7 @@ describe.only('测试打印日志', () => {
   beforeEach(() => {
     logArgs = null
   })
-  test('不打印日志，当关闭日志时', async () => {
+  test("不打印日志，当关闭日志时", async () => {
     try {
       const api = {
         baseURL,
@@ -369,12 +370,10 @@ describe.only('测试打印日志', () => {
         enableLog: false
       }
       await apiSharp.request(api)
-    } catch (err) {
-
-    }
+    } catch (err) {}
     expect(logArgs).toBeNull()
   })
-  test('打印日志，当开启日志时', async () => {
+  test("打印日志，当开启日志时", async () => {
     try {
       const api = {
         baseURL,
@@ -386,32 +385,61 @@ describe.only('测试打印日志', () => {
         enableLog: true
       }
       await apiSharp.request(api)
-    } catch (err) {
-
-    }
+    } catch (err) {}
     expect(logArgs).toBeInstanceOf(Array)
   }),
-  test('按自定义格式打印日志，当开启日志并设置了自定义格式化方法时', async () => {
-    try {
-      const api = {
-        baseURL,
-        url: "/posts/",
-        params: {
-          id: 1
-        },
-        // 开启日志
-        enableLog: true,
-        logFormatter: {
-          logRequest: () => console.log('hello'),
-          logResponse: () => console.log('hello'),
-          logResponseError: () => console.log('hello'),
-          logResponseCache: () => console.log('hello'),
+    test("按自定义格式打印日志，当开启日志并设置了自定义格式化方法时", async () => {
+      try {
+        const api = {
+          baseURL,
+          url: "/posts/",
+          params: {
+            id: 1
+          },
+          // 开启日志
+          enableLog: true,
+          logFormatter: {
+            logRequest: () => console.log("hello"),
+            logResponse: () => console.log("hello"),
+            logResponseError: () => console.log("hello"),
+            logResponseCache: () => console.log("hello")
+          }
         }
-      }
-      await apiSharp.request(api)
-    } catch (err) {
+        await apiSharp.request(api)
+      } catch (err) {}
+      expect(logArgs).toEqual(["hello"])
+    })
+})
 
+// 参考： https://github.com/facebook/prop-types/blob/master/factoryWithTypeCheckers.js
+describe("测试请求参数类型校验", () => {
+  let logArgs: null | any[] = null
+  beforeAll(() => {
+    const originError = console.error
+    console.error = function(...args) {
+      originError.call(this, ...args)
+      logArgs = args
     }
-    expect(logArgs).toEqual(['hello'])
   })
+  beforeEach(() => {
+    logArgs = null
+  })
+  test("测试必填参数", () => {
+    const api = {
+      url: baseURL,
+      paramTypes: {
+        id: PropTypes.number.isRequired
+      },
+      params: { }
+    }
+    const _api = apiSharp.processApi(api)
+    console.log(logArgs)
+    const location = ''
+    const propFullName = 'id'
+    const componentName = _api.baseURL + _api.url
+    const message = 'Warning: Failed  type: ' + 'The ' + location + ' `' + propFullName + '` is marked as required in ' + ('`' + componentName + '`, but its value is `undefined`.')
+    expect(logArgs![0]).toBe(message)
+  })
+
+  // describe('测试参数转换', () => { })
 })

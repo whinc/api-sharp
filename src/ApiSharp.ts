@@ -2,6 +2,7 @@ import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
 import { ApiDescriptor, HTTPMethod, ProcessedApiDescriptor } from "./ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
+import PropTypes from 'prop-types'
 import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject } from "./utils"
 import ICache from "./ICache"
 import ExpireCache from "./ExpireCache"
@@ -301,6 +302,10 @@ export class ApiSharp {
       }
     } else {
       _api.logFormatter = defaultLogFormatter
+    }
+
+    if (isObject(api.paramTypes)) {
+      PropTypes.checkPropTypes(api.paramTypes, api.params, '', _api.baseURL + _api.url)
     }
 
     return _api

@@ -1,3 +1,5 @@
+import {Validator} from 'prop-types'
+
 export type HTTPMethod = "get" | "GET" | "post" | "POST"
 // | 'delete'
 // | 'DELETE'
@@ -46,10 +48,9 @@ export interface ApiDescriptor {
   params?: Object
   /**
    * 请求参数类型
-   * 发出请求前对实际传入参数进行类型校验，校验通过才会发起实际请求，否则终止请求并抛出异常
-   * TODO:
+   * 对请求参数进行运行时类型校验并打印警告，仅在 process.env.NODE_ENV !== 'production' 时生效，生产环境不会增加额外的包体积大小
    */
-  paramTypes?: Object
+  paramTypes?: {[name: string]: Validator}
   /**
    * 开启缓存，默认关闭
    */
