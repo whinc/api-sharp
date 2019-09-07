@@ -8,11 +8,13 @@
 支持的特性:
 
 - 声明式的接口定义
-  - description
+- 支持基本请求配置
   - baseURL
   - url
   - method
+  - headers
   - params
+  - description
 - 支持请求参数处理
   - paramTypes
   - paramTransformer

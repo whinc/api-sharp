@@ -1,5 +1,5 @@
 import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
-import { ApiDescriptor, HTTPMethod, ProcessedApiDescriptor } from "./ApiDescriptor"
+import { ApiDescriptor, HttpMethod, ProcessedApiDescriptor, ApiSharpResponse } from "./ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import PropTypes from "prop-types"
@@ -13,18 +13,13 @@ export interface ApiSharpOptions {
   enableLog?: boolean
 }
 
-export interface ApiSharpResponse<T> {
-  data: T
-  api: ProcessedApiDescriptor
-  from: "cache" | "network" | "mock"
-}
-
 export class ApiSharpRequestError extends Error {
   constructor(message?: string, public api?: ProcessedApiDescriptor) {
     super(message)
   }
 }
 
+const defaultHttpHeader = {}
 const defaultEnableMock = false
 const defaultMockData = undefined
 const defaultMethod = "GET"
@@ -101,7 +96,7 @@ export class ApiSharp {
     this.logRequest(api)
 
     if (api.enableMock) {
-      return { data: api.mockData, from: "mock", api }
+      return { data: api.mockData, from: "mock", api, headers: {}, status: 200, statusText: 'OK(mock)' }
     }
 
     let requestPromise: Promise<AxiosResponse>
@@ -159,7 +154,7 @@ export class ApiSharp {
       this.logResponse(api, res.data)
     }
 
-    return { data: api.returnsTransformer(res.data), from: hitCache ? "cache" : "network", api }
+    return { data: api.returnsTransformer(res.data), from: hitCache ? "cache" : "network", api, status: res.status, statusText: res.statusText, headers: res.headers }
   }
 
   /**
@@ -169,11 +164,12 @@ export class ApiSharp {
     return this.cache.clear()
   }
 
-  private sendRequest(api: ApiDescriptor): Promise<AxiosResponse> {
+  private sendRequest(api: ProcessedApiDescriptor): Promise<AxiosResponse> {
     return this.axios.request({
       baseURL: api.baseURL,
       url: api.url,
       method: api.method,
+      headers: api.headers,
       params: api.method === "GET" ? api.params : {},
       data: api.method === "POST" ? api.params : {}
     })
@@ -202,9 +198,15 @@ export class ApiSharp {
     if (isUndefined(api.method)) {
       _api.method = defaultMethod
     } else if (isString(api.method) && /get|post/i.test(api.method)) {
-      _api.method = api.method.toUpperCase() as HTTPMethod
+      _api.method = api.method.toUpperCase() as HttpMethod
     } else {
       invariant(false, `method 期望值为 get|post 其一，实际值为"${api.method}"`)
+    }
+
+    if (isUndefined(api.headers)) {
+      _api.headers = defaultHttpHeader
+    } else {
+      _api.headers = api.headers
     }
 
     // 描述

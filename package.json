@@ -13,7 +13,7 @@
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
     "clean": "rm dist/*",
-    "server": "json-server -p 4000 ./db.json",
+    "server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "semantic-release": "semantic-release"
   },
@@ -66,7 +66,7 @@
       "<rootDir>/test/*.test.ts"
     ],
     "watchPathIgnorePatterns": [
-      "<rootDir>/[^/]+\\.\\w+$",
+      "<rootDir>/server/",
       "<rootDir>/node_modules/"
     ]
   }

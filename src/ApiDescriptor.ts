@@ -1,6 +1,6 @@
 import {Validator} from 'prop-types'
 
-export type HTTPMethod = "get" | "GET" | "post" | "POST"
+export type HttpMethod = "get" | "GET" | "post" | "POST"
 // | 'delete'
 // | 'DELETE'
 // | 'head'
@@ -27,6 +27,8 @@ export interface LogFormatter {
   logResponseCache(api: ProcessedApiDescriptor, data?: any): void
 }
 
+export type HttpHeader = {[key: string]: string}
+
 export type Params = Object
 
 export interface ApiDescriptor {
@@ -43,7 +45,11 @@ export interface ApiDescriptor {
   /**
    * HTTP 请求方法，默认为 GET 方法
    */
-  method?: HTTPMethod
+  method?: HttpMethod
+  /**
+   * HTTP 请求头
+   */
+  headers?: HttpHeader
   /**
    * 接口描述
    */
@@ -113,7 +119,8 @@ export interface ApiDescriptor {
 export interface ProcessedApiDescriptor {
   url: string
   baseURL: string
-  method: HTTPMethod
+  method: HttpMethod
+  headers: HttpHeader
   description: string
   params: Object
   paramTypes: Object
@@ -127,4 +134,32 @@ export interface ProcessedApiDescriptor {
   enableLog: boolean
   logFormatter: LogFormatter
   [name: string]: any
+}
+
+export interface ApiSharpResponse<T> {
+  /**
+   * 接口返回数据
+   * 返回 HTTP 响应数据经过数据转换后的值
+   */
+  data: T
+  /**
+   * HTTP 状态码
+   */
+  status: number;
+  /**
+   * HTTP 状态码描述
+   */
+  statusText: string;
+  /**
+   * HTTP 响应头部
+   */
+  headers: HttpHeader
+  /**
+   * 请求接口描述符
+   */
+  api: ProcessedApiDescriptor
+  /**
+   * 响应数据的来源
+   */
+  from: "cache" | "network" | "mock"
 }
