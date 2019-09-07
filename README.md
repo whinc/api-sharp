@@ -13,6 +13,11 @@
   - url
   - method
   - params
+- 支持请求参数处理
+  - paramTypes
+  - paramTransformer
+- 支持响应数据处理
+  - returnTransformer
 - 支持缓存
   - enableCache
   - cacheTime

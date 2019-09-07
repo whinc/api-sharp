@@ -18,6 +18,10 @@ export function isObject(v: any): v is Object {
   return v !== null && typeof v === 'object'
 }
 
+export function identity<T> (v: T): T {
+  return v
+}
+
 /**
  * 对对象进行深度排序
  *

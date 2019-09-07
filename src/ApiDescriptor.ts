@@ -15,11 +15,19 @@ export type HTTPMethod = "get" | "GET" | "post" | "POST"
 export type ReturnTypeFn<T> = (api: ApiDescriptor) => T
 
 export interface LogFormatter {
+  /**
+   * 记录 HTTP 发出最近的数据
+   */
   logRequest(api: ProcessedApiDescriptor): void
+  /**
+   * 记录 HTTP 响应后最近的数据
+   */
   logResponse(api: ProcessedApiDescriptor, data?: any): void
   logResponseError(error: Error, api: ProcessedApiDescriptor, data?: any): void
   logResponseCache(api: ProcessedApiDescriptor, data?: any): void
 }
+
+export type Params = Object
 
 export interface ApiDescriptor {
   /**
@@ -45,12 +53,22 @@ export interface ApiDescriptor {
    * GET 请求时，对象的键值对编码后作为 URL 后的查询字符串
    * POST 请求时，对象转换为 JSON 格式后作为 HTTP 的 body
    */
-  params?: Object
+  params?: Params
   /**
    * 请求参数类型
-   * 对请求参数进行运行时类型校验并打印警告，仅在 process.env.NODE_ENV !== 'production' 时生效，生产环境不会增加额外的包体积大小
+   * 对请求参数 params 进行类型校验并打印警告，仅在 process.env.NODE_ENV !== 'production' 时生效，生产环境不会增加额外的包体积大小
    */
-  paramTypes?: {[name: string]: Validator}
+  paramTypes?: {[key in keyof Params]: Validator}
+  /**
+   * 请求参数转换函数
+   * 用户发起调用 -> params(原始参数) -> paramsTransformer(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
+   */
+  paramsTransformer?: (params: Params) => Params
+  /**
+   * 返回数据转换函数
+   * 接收 HTTP 响应 -> returns(返回数据) -> returnsTransformer(数据转换) -> 用户接收结果
+   */
+  returnsTransformer?: (returns: any) => any
   /**
    * 开启缓存，默认关闭
    */
@@ -99,6 +117,7 @@ export interface ProcessedApiDescriptor {
   description: string
   params: Object
   paramTypes: Object
+  returnsTransformer: (returns: any) => any
   enableCache: boolean
   cacheTime: number
   enableMock: boolean

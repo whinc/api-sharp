@@ -47,8 +47,28 @@ function mockOnePost() {
   return { title: "post", author: "jack", date: Date.now() }
 }
 
+function hijackConsole(method, cb) {
+  const originMethod = console[method]
+  console[method] = function(...args) {
+    originMethod.call(this, ...args)
+    cb(args)
+  }
+}
+
+let logArgs: null | any[] = null
+let errorArgs: null | any[] = null
+beforeAll(() => {
+  hijackConsole('log', args => (logArgs = args))
+  hijackConsole('error', args => (errorArgs = args))
+})
+
 afterAll(async () => {
   await clearDB()
+})
+
+beforeEach(() => {
+  logArgs = null
+  errorArgs = null
 })
 
 describe("测试 ApiSharp.processApi() 方法", () => {
@@ -347,17 +367,6 @@ describe("测试 ApiSharp.request()", () => {
 })
 
 describe("测试打印日志", () => {
-  let logArgs: null | any[] = null
-  beforeAll(() => {
-    const originLog = console.log
-    console.log = function(...args) {
-      originLog.call(this, ...args)
-      logArgs = args
-    }
-  })
-  beforeEach(() => {
-    logArgs = null
-  })
   test("不打印日志，当关闭日志时", async () => {
     try {
       const api = {
@@ -387,59 +396,84 @@ describe("测试打印日志", () => {
       await apiSharp.request(api)
     } catch (err) {}
     expect(logArgs).toBeInstanceOf(Array)
-  }),
-    test("按自定义格式打印日志，当开启日志并设置了自定义格式化方法时", async () => {
-      try {
-        const api = {
-          baseURL,
-          url: "/posts/",
-          params: {
-            id: 1
-          },
-          // 开启日志
-          enableLog: true,
-          logFormatter: {
-            logRequest: () => console.log("hello"),
-            logResponse: () => console.log("hello"),
-            logResponseError: () => console.log("hello"),
-            logResponseCache: () => console.log("hello")
-          }
+  })
+  test("按自定义格式打印日志，当开启日志并设置了自定义格式化方法时", async () => {
+    try {
+      const api = {
+        baseURL,
+        url: "/posts/",
+        params: {
+          id: 1
+        },
+        // 开启日志
+        enableLog: true,
+        logFormatter: {
+          logRequest: () => console.log("hello"),
+          logResponse: () => console.log("hello"),
+          logResponseError: () => console.log("hello"),
+          logResponseCache: () => console.log("hello")
         }
-        await apiSharp.request(api)
-      } catch (err) {}
-      expect(logArgs).toEqual(["hello"])
-    })
+      }
+      await apiSharp.request(api)
+    } catch (err) {}
+    expect(logArgs).toEqual(["hello"])
+  })
 })
 
 // 参考： https://github.com/facebook/prop-types/blob/master/factoryWithTypeCheckers.js
-describe("测试请求参数类型校验", () => {
-  let logArgs: null | any[] = null
-  beforeAll(() => {
-    const originError = console.error
-    console.error = function(...args) {
-      originError.call(this, ...args)
-      logArgs = args
-    }
-  })
-  beforeEach(() => {
-    logArgs = null
-  })
+describe("测试请求参数类型", () => {
   test("测试必填参数", () => {
     const api = {
       url: baseURL,
       paramTypes: {
         id: PropTypes.number.isRequired
       },
-      params: { }
+      params: {}
     }
     const _api = apiSharp.processApi(api)
-    console.log(logArgs)
-    const location = ''
-    const propFullName = 'id'
+    const location = ""
+    const propFullName = "id"
     const componentName = _api.baseURL + _api.url
-    const message = 'Warning: Failed  type: ' + 'The ' + location + ' `' + propFullName + '` is marked as required in ' + ('`' + componentName + '`, but its value is `undefined`.')
-    expect(logArgs![0]).toBe(message)
+    const message =
+      "Warning: Failed  type: " +
+      "The " +
+      location +
+      " `" +
+      propFullName +
+      "` is marked as required in " +
+      ("`" + componentName + "`, but its value is `undefined`.")
+    expect(errorArgs![0]).toBe(message)
   })
+})
 
-  // describe('测试参数转换', () => { })
+describe("测试请求参数转换", () => {
+  test("传入数字类型参数，转换成字符串类型后，实际接收的参数是字符串类型", () => {
+    const id = 10
+    const api = {
+      url: baseURL,
+      paramTypes: {
+        id: PropTypes.string.isRequired
+      },
+      params: {
+        id
+      },
+      paramsTransformer: params => ({ ...params, id: String(params.id) })
+    }
+    const _api = apiSharp.processApi(api)
+    expect(_api.params).toEqual({ id: String(id) })
+  })
+})
+
+describe("测试响应数据转换", () => {
+  test("返回数据是对象，转换后，应该是一个数字", async () => {
+    const newPost = mockOnePost()
+    const response = await apiSharp.request({
+      baseURL,
+      url: "/posts",
+      method: "POST",
+      params: newPost,
+      returnsTransformer: (returns) => ({...returns, extra: 100}) 
+    })
+    expect(response.data.extra).toEqual(100)
+  })
 })

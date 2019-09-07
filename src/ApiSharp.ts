@@ -2,8 +2,8 @@ import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
 import { ApiDescriptor, HTTPMethod, ProcessedApiDescriptor } from "./ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
-import PropTypes from 'prop-types'
-import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject } from "./utils"
+import PropTypes from "prop-types"
+import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity } from "./utils"
 import ICache from "./ICache"
 import ExpireCache from "./ExpireCache"
 
@@ -30,6 +30,7 @@ const defaultMockData = undefined
 const defaultMethod = "GET"
 const defaultDescription = ""
 const defaultEnableCache = false
+const defaultReturnsTransformer = identity
 const defaultCacheTime = 5 * 1000
 const defaultEnableRetry = false
 const defaultRetryTimes = 1
@@ -158,7 +159,7 @@ export class ApiSharp {
       this.logResponse(api, res.data)
     }
 
-    return { data: res.data, from: hitCache ? "cache" : "network", api }
+    return { data: api.returnsTransformer(res.data), from: hitCache ? "cache" : "network", api }
   }
 
   /**
@@ -304,8 +305,21 @@ export class ApiSharp {
       _api.logFormatter = defaultLogFormatter
     }
 
-    if (isObject(api.paramTypes)) {
-      PropTypes.checkPropTypes(api.paramTypes, api.params, '', _api.baseURL + _api.url)
+    /**
+     * - 转换参数
+     * - 参数类型校验
+     */
+    let _params = isUndefined(api.params) ? {} : api.params
+    if (isFunction(api.paramsTransformer)) {
+      _params = api.paramsTransformer.call(null, _params)
+    }
+    if (!isUndefined(api.paramTypes)) {
+      PropTypes.checkPropTypes(api.paramTypes, _params, "", _api.baseURL + _api.url)
+    }
+    _api.params = _params
+
+    if (isUndefined(api.returnsTransformer)) {
+      _api.returnsTransformer = defaultReturnsTransformer
     }
 
     return _api
