@@ -30,6 +30,9 @@ export interface LogFormatter {
 export type HttpHeader = {[key: string]: string}
 
 export type Params = Object
+export type ParamsType = {[key in keyof Params]: Validator}
+
+export type Transformer<T> = (value: T) => T
 
 export interface ApiDescriptor {
   /**
@@ -64,17 +67,17 @@ export interface ApiDescriptor {
    * 请求参数类型
    * 对请求参数 params 进行类型校验并打印警告，仅在 process.env.NODE_ENV !== 'production' 时生效，生产环境不会增加额外的包体积大小
    */
-  paramTypes?: {[key in keyof Params]: Validator}
+  paramsType?: ParamsType
   /**
    * 请求参数转换函数
    * 用户发起调用 -> params(原始参数) -> paramsTransformer(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
    */
-  paramsTransformer?: (params: Params) => Params
+  paramsTransformer?: Transformer<Params>
   /**
    * 返回数据转换函数
    * 接收 HTTP 响应 -> returns(返回数据) -> returnsTransformer(数据转换) -> 用户接收结果
    */
-  returnsTransformer?: (returns: any) => any
+  returnsTransformer?: Transformer<any>
   /**
    * 开启缓存，默认关闭
    */
@@ -122,9 +125,9 @@ export interface ProcessedApiDescriptor {
   method: HttpMethod
   headers: HttpHeader
   description: string
-  params: Object
-  paramTypes: Object
-  returnsTransformer: (returns: any) => any
+  params: Params
+  paramTypes: ParamsType
+  returnsTransformer: Transformer<any>
   enableCache: boolean
   cacheTime: number
   enableMock: boolean

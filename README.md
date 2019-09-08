@@ -1,9 +1,8 @@
 # ApiSharp
 
-前端 HTTP 接口请求库，覆盖业务场景中常用的一些功能。
+ApiSharp 是一个声明式、可配置、可扩展、面向业务的 API 接口请求库。
 
-![npm](https://img.shields.io/npm/v/api-sharp)
-![CircleCI](https://circleci.com/gh/whinc/api-sharp/tree/master.svg?style=svg&circle-token=53761af868327e3798c609f9ceed6b5690147827)
+![npm](https://img.shields.io/npm/v/api-sharp) ![CircleCI](https://circleci.com/gh/whinc/api-sharp/tree/master.svg?style=svg&circle-token=53761af868327e3798c609f9ceed6b5690147827)
 
 支持的特性:
 

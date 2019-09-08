@@ -1,16 +1,34 @@
-import axios, { AxiosStatic, AxiosResponse, AxiosInstance } from "axios"
-import { ApiDescriptor, HttpMethod, ProcessedApiDescriptor, ApiSharpResponse } from "./ApiDescriptor"
+import axios, { AxiosResponse, AxiosInstance } from "axios"
+import {
+  ApiDescriptor,
+  HttpMethod,
+  ProcessedApiDescriptor,
+  ApiSharpResponse,
+  HttpHeader,
+  Transformer,
+  LogFormatter,
+  Params
+} from "./ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import PropTypes from "prop-types"
-import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity } from "./utils"
+import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity, getDefault } from "./utils"
 import ICache from "./ICache"
 import ExpireCache from "./ExpireCache"
 
+// 全局配置
 export interface ApiSharpOptions {
-  axios?: AxiosStatic
-  cache?: ICache
+  baseURL?: string
+  method?: HttpMethod
+  headers?: HttpHeader
+  paramsTransformer?: Transformer<Params>
+  returnsTransformer?: Transformer<any>
+  enableCache?: boolean
+  cacheTime?: number
+  enableRetry?: boolean
+  retryTimes?: number
   enableLog?: boolean
+  logFormatter?: LogFormatter
 }
 
 export class ApiSharpRequestError extends Error {
@@ -19,72 +37,98 @@ export class ApiSharpRequestError extends Error {
   }
 }
 
-const defaultHttpHeader = {}
-const defaultEnableMock = false
-const defaultMockData = undefined
-const defaultMethod = "GET"
-const defaultDescription = ""
-const defaultEnableCache = false
-const defaultReturnsTransformer = identity
-const defaultCacheTime = 5 * 1000
-const defaultEnableRetry = false
-const defaultRetryTimes = 1
-const defaultEnableLog = process.env.NODE_ENV !== "production"
-const defaultLogFormatter = {
-  logRequest: (api: ProcessedApiDescriptor) => {
-    console.log(
-      `%cRequest %c %c${api.method}|${api.description}|${api.url}%c|%O`,
-      "color: white; background-color: rgba(0, 116, 217, 0.69); padding: 2px 5px; border-radius: 2px",
-      "",
-      "color: #0074D9",
-      "",
-      api.params
-    )
-  },
-  logResponse: (api: ProcessedApiDescriptor, data: any) => {
-    console.log(
-      `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
-      "color: white; background-color: rgba(61, 153, 112, 0.69); padding: 2px 5px; border-radius: 2px",
-      "",
-      "color: #3D9970",
-      "",
-      api.params,
-      data
-    )
-  },
-  logResponseError: (_error: Error, api: ProcessedApiDescriptor, data: any) => {
-    console.log(
-      `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
-      "color: white; background-color: rgba(255, 65, 54, 0.69); padding: 2px 5px; border-radius: 2px",
-      "",
-      "color: #FF4136",
-      "",
-      api.params,
-      data
-    )
-  },
-  logResponseCache: (api: ProcessedApiDescriptor, data: any) => {
-    console.log(
-      `%cResponse Cache %c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
-      "color: white; background-color: rgba(177, 13, 201, 0.69); padding: 2px 5px; border-radius: 2px",
-      "",
-      "color: #B10DC9",
-      "",
-      api.params,
-      data
-    )
+export const defaultConfig = {
+  url: '',
+  baseURL: "",
+  headers: {},
+  enableMock: false,
+  mockData: undefined,
+  method: "GET",
+  params: {},
+  description: "",
+  enableCache: false,
+  cacheTime: 5 * 1000,
+  paramsTransformer: identity,
+  returnsTransformer: identity,
+  enableRetry: false,
+  retryTimes: 1,
+  enableLog: process.env.NODE_ENV !== "production",
+  logFormatter: {
+    logRequest: (api: ProcessedApiDescriptor) => {
+      console.log(
+        `%cRequest %c %c${api.method}|${api.description}|${api.url}%c|%O`,
+        "color: white; background-color: rgba(0, 116, 217, 0.69); padding: 2px 5px; border-radius: 2px",
+        "",
+        "color: #0074D9",
+        "",
+        api.params
+      )
+    },
+    logResponse: (api: ProcessedApiDescriptor, data: any) => {
+      console.log(
+        `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
+        "color: white; background-color: rgba(61, 153, 112, 0.69); padding: 2px 5px; border-radius: 2px",
+        "",
+        "color: #3D9970",
+        "",
+        api.params,
+        data
+      )
+    },
+    logResponseError: (_error: Error, api: ProcessedApiDescriptor, data: any) => {
+      console.log(
+        `%cResponse%c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
+        "color: white; background-color: rgba(255, 65, 54, 0.69); padding: 2px 5px; border-radius: 2px",
+        "",
+        "color: #FF4136",
+        "",
+        api.params,
+        data
+      )
+    },
+    logResponseCache: (api: ProcessedApiDescriptor, data: any) => {
+      console.log(
+        `%cResponse Cache %c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
+        "color: white; background-color: rgba(177, 13, 201, 0.69); padding: 2px 5px; border-radius: 2px",
+        "",
+        "color: #B10DC9",
+        "",
+        api.params,
+        data
+      )
+    }
   }
 }
 
 export class ApiSharp {
-  private axios: AxiosInstance
-  private cache: ICache<Promise<AxiosResponse>>
-  // private enableLog: boolean
+  private readonly axios: AxiosInstance
+  private readonly cache: ICache<Promise<AxiosResponse>>
+  private readonly baseURL: string
+  private readonly method: HttpMethod
+  private readonly headers: HttpHeader
+  private readonly paramsTransformer: Transformer<Params>
+  private readonly returnsTransformer: Transformer<any>
+  private readonly enableCache: boolean
+  private readonly cacheTime: number
+  private readonly enableRetry: boolean
+  private readonly retryTimes: number
+  private readonly enableLog: boolean
+  private readonly logFormatter: LogFormatter
 
   constructor(options: ApiSharpOptions = {}) {
-    // this.enableLog = options.enableLog !== undefined ? !!options.enableLog : true
-    this.axios = options.axios || axios.create()
-    this.cache = options.cache || new ExpireCache<Promise<AxiosResponse>>()
+    this.axios = axios.create()
+    this.cache = new ExpireCache<Promise<AxiosResponse>>()
+    this.baseURL = getDefault(options.baseURL, defaultConfig.baseURL)
+    this.method = getDefault(options.method, defaultConfig.method)
+    this.headers = getDefault(options.headers, defaultConfig.headers)
+    this.paramsTransformer = getDefault(options.paramsTransformer, defaultConfig.paramsTransformer)
+    this.returnsTransformer = getDefault(options.returnsTransformer, defaultConfig.returnsTransformer)
+    this.enableCache = getDefault(options.enableCache, defaultConfig.enableCache)
+    this.cacheTime = getDefault(options.cacheTime, defaultConfig.cacheTime)
+    this.enableRetry = getDefault(options.enableRetry, defaultConfig.enableRetry)
+    this.retryTimes = getDefault(options.retryTimes, defaultConfig.retryTimes)
+    this.enableLog = getDefault(options.enableLog, defaultConfig.enableLog)
+    this.logFormatter = getDefault(options.logFormatter, defaultConfig.logFormatter)
   }
 
   /**
@@ -96,7 +140,7 @@ export class ApiSharp {
     this.logRequest(api)
 
     if (api.enableMock) {
-      return { data: api.mockData, from: "mock", api, headers: {}, status: 200, statusText: 'OK(mock)' }
+      return { data: api.mockData, from: "mock", api, headers: {}, status: 200, statusText: "OK(mock)" }
     }
 
     let requestPromise: Promise<AxiosResponse>
@@ -154,7 +198,14 @@ export class ApiSharp {
       this.logResponse(api, res.data)
     }
 
-    return { data: api.returnsTransformer(res.data), from: hitCache ? "cache" : "network", api, status: res.status, statusText: res.statusText, headers: res.headers }
+    return {
+      data: api.returnsTransformer(res.data),
+      from: hitCache ? "cache" : "network",
+      api,
+      status: res.status,
+      statusText: res.statusText,
+      headers: res.headers
+    }
   }
 
   /**
@@ -184,19 +235,24 @@ export class ApiSharp {
 
     const _api = { ...api } as ProcessedApiDescriptor
 
-    // 移除首部多余分隔符
+    // 请求地址
     if (!api.url || !String(api.url)) {
       invariant(false, `url 为空`)
     } else {
       _api.url = String(api.url)
     }
 
-    // 移除尾部多余分隔符
-    _api.baseURL = (api.baseURL || this.axios.defaults.baseURL || "").replace(/\/+$/, "")
+    // 基地址
+    if (isUndefined(api.baseURL)) {
+      _api.baseURL = this.baseURL
+    } else {
+      _api.baseURL = api.baseURL
+    }
+    _api.baseURL = _api.baseURL.replace(/\/+$/, '')
 
     // 请求方法
     if (isUndefined(api.method)) {
-      _api.method = defaultMethod
+      _api.method = this.method
     } else if (isString(api.method) && /get|post/i.test(api.method)) {
       _api.method = api.method.toUpperCase() as HttpMethod
     } else {
@@ -204,14 +260,14 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.headers)) {
-      _api.headers = defaultHttpHeader
+      _api.headers = this.headers
     } else {
       _api.headers = api.headers
     }
 
     // 描述
     if (isUndefined(api.description)) {
-      _api.description = defaultDescription
+      _api.description = defaultConfig.description
     } else if (isFunction(api.description)) {
       _api.description = String(api.description.call(null, api))
     } else {
@@ -220,39 +276,31 @@ export class ApiSharp {
 
     // 开启缓存
     if (isUndefined(api.enableCache)) {
-      _api.enableCache = defaultEnableCache
+      _api.enableCache = this.enableCache
     } else if (isFunction(api.enableCache)) {
       _api.enableCache = !!api.enableCache.call(null, api)
     } else {
       _api.enableCache = !!api.enableCache
     }
-    if (_api.method !== "GET" && _api.enableCache) {
+    if (_api.method.toUpperCase() !== "GET" && _api.enableCache) {
       _api.enableCache = false
       warning(false, `只有 GET 请求支持开启缓存，当前请求方法为"${_api.method}"，缓存开启不会生效`)
     }
 
     // 缓存时间
     if (isUndefined(api.cacheTime)) {
-      _api.cacheTime = defaultCacheTime
+      _api.cacheTime = this.cacheTime
     } else if (isNumber(api.cacheTime)) {
       _api.cacheTime = api.cacheTime
     } else if (isFunction(api.cacheTime)) {
       _api.cacheTime = api.cacheTime.call(null, api)
     } else {
-      _api.cacheTime = defaultCacheTime
+      _api.cacheTime = this.cacheTime
       warning(false, `cacheTime 期望 number/function 类型，实际类型为${typeof api.cacheTime}，自动使用默认值`)
     }
 
-    if (isUndefined(api.enableCache)) {
-      _api.enableMock = defaultEnableMock
-    } else if (isFunction(api.enableMock)) {
-      _api.enableMock = !!api.enableMock.call(null, api)
-    } else {
-      _api.enableMock = !!api.enableMock
-    }
-
     if (isUndefined(api.enableMock)) {
-      _api.enableMock = defaultEnableMock
+      _api.enableMock = defaultConfig.enableMock
     } else if (isFunction(api.enableMock)) {
       _api.enableMock = !!api.enableMock.call(null, api)
     } else {
@@ -260,7 +308,7 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.mockData)) {
-      _api.mockData = defaultMockData
+      _api.mockData = defaultConfig.mockData
     } else if (isFunction(api.mockData)) {
       _api.mockData = api.mockData.call(null, api)
     } else {
@@ -268,7 +316,7 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.enableRetry)) {
-      _api.enableRetry = defaultEnableRetry
+      _api.enableRetry = this.enableRetry
     } else if (isFunction(api.enableRetry)) {
       _api.enableRetry = !!api.enableRetry.call(null, api)
     } else {
@@ -276,18 +324,18 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.retryTimes)) {
-      _api.retryTimes = defaultRetryTimes
+      _api.retryTimes = this.retryTimes
     } else if (isNumber(api.retryTimes)) {
       _api.retryTimes = api.retryTimes
     } else if (isFunction(api.retryTimes)) {
       _api.retryTimes = api.retryTimes.call(null, api)
     } else {
-      _api.retryTimes = defaultRetryTimes
+      _api.retryTimes = this.retryTimes
       warning(false, `retryTimes 期望 number/function 类型，实际类型为${typeof api.retryTimes}，自动使用默认值`)
     }
 
     if (isUndefined(api.enableLog)) {
-      _api.enableLog = defaultEnableLog
+      _api.enableLog = this.enableLog
     } else if (isFunction(api.enableLog)) {
       _api.enableLog = !!api.enableLog.call(null, api)
     } else {
@@ -295,33 +343,40 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.logFormatter)) {
-      _api.logFormatter = defaultLogFormatter
+      _api.logFormatter = this.logFormatter
     } else if (isObject(api.logFormatter)) {
       _api.logFormatter = {
-        logRequest: api.logFormatter.logRequest || defaultLogFormatter.logRequest,
-        logResponse: api.logFormatter.logResponse || defaultLogFormatter.logResponse,
-        logResponseError: api.logFormatter.logResponseError || defaultLogFormatter.logResponseError,
-        logResponseCache: api.logFormatter.logResponseCache || defaultLogFormatter.logResponseCache
+        logRequest: api.logFormatter.logRequest || this.logFormatter.logRequest,
+        logResponse: api.logFormatter.logResponse || this.logFormatter.logResponse,
+        logResponseError: api.logFormatter.logResponseError || this.logFormatter.logResponseError,
+        logResponseCache: api.logFormatter.logResponseCache || this.logFormatter.logResponseCache
       }
     } else {
-      _api.logFormatter = defaultLogFormatter
+      _api.logFormatter = this.logFormatter
     }
 
     /**
-     * - 转换参数
-     * - 参数类型校验
+     * 参数转换 + 类型校验
      */
-    let _params = isUndefined(api.params) ? {} : api.params
-    if (isFunction(api.paramsTransformer)) {
-      _params = api.paramsTransformer.call(null, _params)
+    let _params = isUndefined(api.params) ? defaultConfig.params : api.params
+    let _paramsTransformer
+    if (isUndefined(api.paramsTransformer)) {
+      _paramsTransformer = this.paramsTransformer
+    } else if (isFunction(api.paramsTransformer)) {
+      _paramsTransformer = api.paramsTransformer
+    } else {
+      _paramsTransformer = this.paramsTransformer
+      warning(false, `paramsTransformer 期望一个函数，实际接收到${typeof api.paramsTransformer}`)
     }
-    if (!isUndefined(api.paramTypes)) {
-      PropTypes.checkPropTypes(api.paramTypes, _params, "", _api.baseURL + _api.url)
+    _params = _paramsTransformer.call(null, _params)
+    if (!isUndefined(api.paramsType)) {
+      const componentName = _api.baseURL + _api.url
+      PropTypes.checkPropTypes(api.paramsType, _params, "", componentName)
     }
     _api.params = _params
 
     if (isUndefined(api.returnsTransformer)) {
-      _api.returnsTransformer = defaultReturnsTransformer
+      _api.returnsTransformer = this.returnsTransformer
     }
 
     return _api

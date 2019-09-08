@@ -1,10 +1,11 @@
 import axios from "axios"
 import PropTypes from "prop-types"
-import { ApiSharp } from "../src/ApiSharp"
-import { ApiDescriptor } from "../src/ApiDescriptor"
+import { ApiSharp, defaultConfig, ApiSharpOptions } from "../src/ApiSharp"
+import { ApiDescriptor, ProcessedApiDescriptor } from "../src/ApiDescriptor"
+import { identity } from "../src/utils";
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
-const apiSharp: any = new ApiSharp({ axios, enableLog: false })
+const apiSharp: any = new ApiSharp({enableLog: false})
 
 const baseURL = "http://localhost:4000"
 
@@ -69,6 +70,61 @@ afterAll(async () => {
 beforeEach(() => {
   logArgs = null
   errorArgs = null
+})
+
+describe('测试 new ApiSharp(options) 全局配置', () => {
+  test('当接口配置且构造函数配置时，默认配置生效', () => {
+    const api = {url: 'http://anything'}
+    const apiSharp: any = new ApiSharp()
+    const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
+    expect(_api.baseURL).toBe(defaultConfig.baseURL)
+    expect(_api.method).toBe(defaultConfig.method)
+    expect(_api.headers).toEqual(defaultConfig.headers)
+    // expect(_api.paramsTransformer).toBe(defaultConfig.paramsTransformer)
+    expect(_api.returnsTransformer).toBe(defaultConfig.returnsTransformer)
+    expect(_api.enableCache).toBe(defaultConfig.enableCache)
+    expect(_api.cacheTime).toBe(defaultConfig.cacheTime)
+    expect(_api.enableRetry).toBe(defaultConfig.enableRetry)
+    expect(_api.retryTimes).toBe(defaultConfig.retryTimes)
+    expect(_api.enableLog).toBe(defaultConfig.enableLog)
+    expect(_api.logFormatter).toBe(defaultConfig.logFormatter)
+  })
+
+  test('当接口未配置时，构造函数配置生效，', () => {
+    const api = {url: 'http://anything'}
+    const options: ApiSharpOptions = {
+      baseURL: 'x',
+      method: 'get',
+      headers: {
+        a: 'a'
+      },
+      returnsTransformer: v => v,
+      enableCache: true,
+      cacheTime: 9999,
+      enableRetry: true,
+      retryTimes: 9999,
+      enableLog: true,
+      logFormatter: {
+        logRequest: identity,
+        logResponse: identity,
+        logResponseCache: identity,
+        logResponseError: identity
+      }
+    }
+    const apiSharp: any = new ApiSharp(options)
+    const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
+    expect(_api.baseURL).toBe(options.baseURL)
+    expect(_api.method).toBe(options.method)
+    expect(_api.headers).toEqual(options.headers)
+    // expect(_api.paramsTransformer).toBe(options.paramsTransformer)
+    expect(_api.returnsTransformer).toBe(options.returnsTransformer)
+    expect(_api.enableCache).toBe(options.enableCache)
+    expect(_api.cacheTime).toBe(options.cacheTime)
+    expect(_api.enableRetry).toBe(options.enableRetry)
+    expect(_api.retryTimes).toBe(options.retryTimes)
+    expect(_api.enableLog).toBe(options.enableLog)
+    expect(_api.logFormatter).toBe(options.logFormatter)
+  })
 })
 
 describe("测试 ApiSharp.processApi() 方法", () => {
@@ -442,7 +498,7 @@ describe("测试 ApiSharp.request()", () => {
     test("测试必填参数", () => {
       const api = {
         url: baseURL,
-        paramTypes: {
+        paramsType: {
           id: PropTypes.number.isRequired
         },
         params: {}
@@ -468,7 +524,7 @@ describe("测试 ApiSharp.request()", () => {
       const id = 10
       const api = {
         url: baseURL,
-        paramTypes: {
+        paramsType: {
           id: PropTypes.string.isRequired
         },
         params: {

@@ -22,6 +22,13 @@ export function identity<T> (v: T): T {
   return v
 }
 
+export function getDefault (...args) {
+  for (let v of args) {
+    if (!isUndefined(v)) return v
+  }
+  return undefined
+}
+
 /**
  * 对对象进行深度排序
  *
