@@ -14,6 +14,7 @@ ApiSharp 是一个声明式、可配置、可扩展、面向业务的 API 接口
   - headers
   - params
   - description
+  - timeout
 - 支持请求参数处理
   - paramTypes
   - paramTransformer

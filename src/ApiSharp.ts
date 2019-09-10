@@ -27,6 +27,7 @@ export interface ApiSharpOptions {
   cacheTime?: number
   enableRetry?: boolean
   retryTimes?: number
+  timeout?: number
   enableLog?: boolean
   logFormatter?: LogFormatter
 }
@@ -52,6 +53,7 @@ export const defaultConfig = {
   returnsTransformer: identity,
   enableRetry: false,
   retryTimes: 1,
+  timeout: 60 * 1000,
   enableLog: process.env.NODE_ENV !== "production",
   logFormatter: {
     logRequest: (api: ProcessedApiDescriptor) => {
@@ -112,6 +114,7 @@ export class ApiSharp {
   private readonly cacheTime: number
   private readonly enableRetry: boolean
   private readonly retryTimes: number
+  private readonly timeout: number
   private readonly enableLog: boolean
   private readonly logFormatter: LogFormatter
 
@@ -127,6 +130,7 @@ export class ApiSharp {
     this.cacheTime = getDefault(options.cacheTime, defaultConfig.cacheTime)
     this.enableRetry = getDefault(options.enableRetry, defaultConfig.enableRetry)
     this.retryTimes = getDefault(options.retryTimes, defaultConfig.retryTimes)
+    this.timeout = getDefault(options.timeout, defaultConfig.timeout)
     this.enableLog = getDefault(options.enableLog, defaultConfig.enableLog)
     this.logFormatter = getDefault(options.logFormatter, defaultConfig.logFormatter)
   }
@@ -139,6 +143,7 @@ export class ApiSharp {
 
     this.logRequest(api)
 
+    // 处理 mock 数据
     if (api.enableMock) {
       return { data: api.mockData, from: "mock", api, headers: {}, status: 200, statusText: "OK(mock)" }
     }
@@ -147,11 +152,16 @@ export class ApiSharp {
     let cachedKey
     let hitCache = false
 
+    // 构造一个超时时自动 reject 的 Promise
+    const timeoutPromise: Promise<ApiSharpRequestError> = new Promise((_resolve, reject) => {
+      const error = new Error(`请求超时(${api.timeout}ms)`)
+      setTimeout(() => reject(error), api.timeout)
+    })
+
+    // 处理缓存
     if (api.enableCache) {
-      // 开启了缓存
       cachedKey = this.generateCachedKey(api)
       if (this.cache.has(cachedKey)) {
-        // 命中缓存
         requestPromise = this.cache.get(cachedKey)!
         hitCache = true
       } else {
@@ -163,10 +173,14 @@ export class ApiSharp {
       requestPromise = this.sendRequest(api)
     }
 
-    let res: AxiosResponse<any>
+    let res: AxiosResponse
+
     try {
-      res = await requestPromise
+      // 发起请求
+      res = await Promise.race([requestPromise, timeoutPromise]) as AxiosResponse
     } catch (err) {
+      // 请求失败或超时，都会抛出异常并被捕获处理
+
       // 请求失败时删除缓存
       if (api.enableCache) {
         this.cache.delete(cachedKey)
@@ -179,6 +193,7 @@ export class ApiSharp {
       }
     }
 
+    // 检查请求结果，并对失败情况做处理
     const checkResult = this.checkResponseData(res.data)
     if (!checkResult.success) {
       if (api.enableCache) {
@@ -332,6 +347,12 @@ export class ApiSharp {
     } else {
       _api.retryTimes = this.retryTimes
       warning(false, `retryTimes 期望 number/function 类型，实际类型为${typeof api.retryTimes}，自动使用默认值`)
+    }
+
+    if (isUndefined(api.timeout)) {
+      _api.timeout = this.timeout
+    } else {
+      _api.timeout = api.timeout
     }
 
     if (isUndefined(api.enableLog)) {

@@ -73,7 +73,7 @@ beforeEach(() => {
 })
 
 describe('测试 new ApiSharp(options) 全局配置', () => {
-  test('当接口配置且构造函数配置时，默认配置生效', () => {
+  test('当 ApiSharp.request() 和 new ApiSharp() 均未指定配置项时，则使用默认配置项', () => {
     const api = {url: 'http://anything'}
     const apiSharp: any = new ApiSharp()
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
@@ -86,11 +86,12 @@ describe('测试 new ApiSharp(options) 全局配置', () => {
     expect(_api.cacheTime).toBe(defaultConfig.cacheTime)
     expect(_api.enableRetry).toBe(defaultConfig.enableRetry)
     expect(_api.retryTimes).toBe(defaultConfig.retryTimes)
+    expect(_api.timeout).toBe(defaultConfig.timeout)
     expect(_api.enableLog).toBe(defaultConfig.enableLog)
     expect(_api.logFormatter).toBe(defaultConfig.logFormatter)
   })
 
-  test('当接口未配置时，构造函数配置生效，', () => {
+  test('当 ApiSharp.request() 中未指定配置项，但 new ApiSharp() 中指定了时，则使用 new ApiSharp() 中的配置，', () => {
     const api = {url: 'http://anything'}
     const options: ApiSharpOptions = {
       baseURL: 'x',
@@ -103,6 +104,7 @@ describe('测试 new ApiSharp(options) 全局配置', () => {
       cacheTime: 9999,
       enableRetry: true,
       retryTimes: 9999,
+      timeout: 999,
       enableLog: true,
       logFormatter: {
         logRequest: identity,
@@ -122,6 +124,7 @@ describe('测试 new ApiSharp(options) 全局配置', () => {
     expect(_api.cacheTime).toBe(options.cacheTime)
     expect(_api.enableRetry).toBe(options.enableRetry)
     expect(_api.retryTimes).toBe(options.retryTimes)
+    expect(_api.timeout).toBe(options.timeout)
     expect(_api.enableLog).toBe(options.enableLog)
     expect(_api.logFormatter).toBe(options.logFormatter)
   })
@@ -548,6 +551,24 @@ describe("测试 ApiSharp.request()", () => {
         returnsTransformer: returns => ({ ...returns, extra: 100 })
       })
       expect(response.data.extra).toEqual(100)
+    })
+  })
+  describe('测试接口超时', () => {
+    test("接口请求超时，应抛出异常", async () => {
+      const newPost = mockOnePost()
+      try {
+        await apiSharp.request({
+          baseURL,
+          url: "/posts",
+          method: "POST",
+          params: newPost,
+          timeout: 1
+        })
+        expect.assertions(0)
+      } catch (err) {
+        expect(err).toBeInstanceOf(Error)
+        expect(err.message).toMatch('请求超时')
+      }
     })
   })
 })

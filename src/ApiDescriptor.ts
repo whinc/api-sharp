@@ -80,6 +80,7 @@ export interface ApiDescriptor {
   returnsTransformer?: Transformer<any>
   /**
    * 开启缓存，默认关闭
+   * 并发请求相同接口且参数相同时，实际只会发出一个请求，因为缓存的是请求的 Promise。
    */
   enableCache?: boolean | ReturnTypeFn<boolean>
   /**
@@ -103,6 +104,11 @@ export interface ApiDescriptor {
    * 重试最大次数，默认 1 次
    */
   retryTimes?: number | ReturnTypeFn<number>
+  /**
+   * 接口超时时间，单位毫秒，默认 60*1000 ms
+   * 从发出请求起，如果 timeout 毫秒后接口未返回，接口调用失败。
+   */
+  timeout?: number
   /**
    * 开启打印日志，默认为 process.env.NODE_ENV !== "production"
    */
@@ -134,6 +140,7 @@ export interface ProcessedApiDescriptor {
   mockData: any
   enableRetry: boolean
   retryTimes: number
+  timeout: number,
   enableLog: boolean
   logFormatter: LogFormatter
   [name: string]: any
