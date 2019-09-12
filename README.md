@@ -1,10 +1,13 @@
 # ApiSharp
 
-ApiSharp 是一个声明式、可配置、可扩展、面向业务的 API 接口请求库。
+ApiSharp 是一个声明式、可配置、可扩展的 API 接口请求库。从业务开发实践中提炼了常用的配置项，通过简单配置可快速封装适合自身业务的网络请求服务。
 
-![npm](https://img.shields.io/npm/v/api-sharp) ![CircleCI](https://circleci.com/gh/whinc/api-sharp/tree/master.svg?style=svg&circle-token=53761af868327e3798c609f9ceed6b5690147827)
+![npm](https://img.shields.io/npm/v/api-sharp)
+![](https://img.shields.io/bundlephobia/minzip/api-sharp)
+![](https://img.shields.io/npm/dt/api-sharp)
+![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)
 
-支持的特性:
+# 特性
 
 - 声明式的接口定义
 - 支持基本请求配置

@@ -12,6 +12,7 @@
     "build": "npm run clean && tsdx build --format cjs,esm,umd --name ApiSharp",
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
+    "coverage": "jest --coverage",
     "clean": "rm dist/*",
     "server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
