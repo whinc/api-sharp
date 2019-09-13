@@ -3,40 +3,36 @@
 <div align="center">
 Api Sharp 是一个声明式、可配置、可扩展的 API 接口请求库。从业务开发实践中提炼了常用的配置项，通过简单配置可快速封装适合自身业务的网络请求服务。
 
+<p>
+
 ![npm](https://img.shields.io/npm/v/api-sharp)
 ![](https://img.shields.io/bundlephobia/minzip/api-sharp)
 ![](https://img.shields.io/npm/dt/api-sharp)
 ![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)
+
+</p>
+
 </div>
 
 ## 特性
 
-- 声明式的接口定义
-- 支持基本请求配置
-  - baseURL
-  - url
-  - method
-  - headers
-  - params
-  - description
-  - timeout
-- 支持请求参数处理
-  - paramTypes
-  - paramTransformer
-- 支持响应数据处理
-  - returnTransformer
-- 支持缓存
-  - enableCache
-  - cacheTime
-- 支持数据模拟
-  - enableMock
-  - mockData
-- 支持失败重试
-  - enableRetry
-  - retryTimes
-- 支持自定义日志
-  - enableLog
-  - logFormatter
+- 简单，只有一个`request()`方法
+- 声明式，通过 JS 对象描述接口
+- 接口配置丰富
+  - 请求基地址
+  - 请求地址
+  - 请求方法
+  - 请求 HTTP 头
+  - 接口描述
+  - 超时设置
+  - 请求参数校验
+  - 请求参数转换
+  - 响应数据转换
+  - 缓存
+  - 数据mock
+  - 失败重试
+  - 自定义日志
+- 支持`d.ts`类型定义
 
 ## 安装
 
@@ -49,30 +45,54 @@ $ npm install api-sharp
 
 ## 示例
 
+创建 ApiSharp 实例
 ```js
 import ApiSharp from 'api-sharp'
 
-async function request () {
-  try {
-    const res = await apiSharp.request({
-      baseURL: "https://api-mock-ti6c29r88wgm.runkit.sh",
-      url: "/json/server_date",
-      description: "服务器时间(JSON)"
-    });
-    console.log(res);
-  } catch (err) {
-    console.error(err);
-  }
-}
+// 创建实例，可以传入全局配置，省略使用默认配置
+const apiSharp = new ApiSharp(/* options */)
 ```
+
+发送 GET 请求
+```js
+apiSharp.request({
+  baseURL: "https://api-mock-ti6c29r88wgm.runkit.sh",
+  url: "/json/server_date",
+  method: 'GET',
+  description: "服务器时间(JSON)",
+  params: {
+    format: 'json'
+  }
+});
+```
+
+发送 POST 请求
+```js
+apiSharp.request({
+  baseURL: "https://api-mock-ti6c29r88wgm.runkit.sh",
+  url: "/json/server_date",
+  method: 'POST',
+  description: "服务器时间(JSON)",
+  params: {
+    format: 'json'
+  }
+});
+```
+
+在线示例
 
 [![Edit api-sharp demo](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/api-sharp-demo-rw1n3?expanddevtools=1&fontsize=14&module=%2Fsrc%2Findex.js)
 
 ## 文档
 
-ApiSharp 暴露了一个 request 方法发起请求并返回 Promise，第一个参数是接口描述对象，配置请求的各项行为。
+ApiSharp 暴露了一个 request 方法，通过该方法完成所有网络请求任务。
 
 ```typescript
+/**
+ * 请求接口数据
+ * @params api - 接口描述对象
+ * @returns - 包含响应结果的 Promise 对象
+ */
 async request(api: ApiDescriptor): Promise<ApiSharpResponse>
 ```
 
@@ -172,6 +192,8 @@ export interface ApiDescriptor {
 
 ## 共建
 
+非常欢迎提 issue 或 PR 来一起改进该项目，下面是一份上手指南。
+
 克隆项目后，切换到项目根目录下，并安装依赖
 ```bash
 $ git clone <path_to_project>
@@ -187,4 +209,6 @@ $ npm run test:watch
 
 执行后便可以在`src`目录下修改源码，在`test`目录编写测试用例进行测试
 
-## MIT LICENSE
+## LICENSE
+
+[MIT](./LICENSE)
