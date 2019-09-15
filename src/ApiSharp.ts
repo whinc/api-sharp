@@ -1,4 +1,3 @@
-import axios, { AxiosResponse, AxiosInstance } from "axios"
 import {
   ApiDescriptor,
   HttpMethod,
@@ -8,13 +7,13 @@ import {
   Transformer,
   LogFormatter,
   Params
-} from "./ApiDescriptor"
+} from "./types/ApiDescriptor"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import PropTypes from "prop-types"
 import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity, getDefault } from "./utils"
-import ICache from "./ICache"
-import ExpireCache from "./ExpireCache"
+import {ICache, ExpireCache} from './cache'
+import {IHttpClient, IResponse, WebXhrClient} from './http_client'
 
 // 全局配置
 export interface ApiSharpOptions {
@@ -103,8 +102,8 @@ export const defaultConfig = {
 }
 
 export class ApiSharp {
-  private readonly axios: AxiosInstance
-  private readonly cache: ICache<Promise<AxiosResponse>>
+  private readonly httpClient: IHttpClient
+  private readonly cache: ICache<Promise<IResponse>>
   private readonly baseURL: string
   private readonly method: HttpMethod
   private readonly headers: HttpHeader
@@ -119,8 +118,9 @@ export class ApiSharp {
   private readonly logFormatter: LogFormatter
 
   constructor(options: ApiSharpOptions = {}) {
-    this.axios = axios.create()
-    this.cache = new ExpireCache<Promise<AxiosResponse>>()
+    this.httpClient = new WebXhrClient()
+    // this.httpClient = new WebAxiosClient()
+    this.cache = new ExpireCache<Promise<IResponse>>()
     this.baseURL = getDefault(options.baseURL, defaultConfig.baseURL)
     this.method = getDefault(options.method, defaultConfig.method)
     this.headers = getDefault(options.headers, defaultConfig.headers)
@@ -148,7 +148,7 @@ export class ApiSharp {
       return { data: api.mockData, from: "mock", api, headers: {}, status: 200, statusText: "OK(mock)" }
     }
 
-    let requestPromise: Promise<AxiosResponse>
+    let requestPromise: Promise<IResponse>
     let cachedKey
     let hitCache = false
 
@@ -173,11 +173,11 @@ export class ApiSharp {
       requestPromise = this.sendRequest(api)
     }
 
-    let res: AxiosResponse
+    let res: IResponse
 
     try {
       // 发起请求
-      res = await Promise.race([requestPromise, timeoutPromise]) as AxiosResponse
+      res = await Promise.race([requestPromise, timeoutPromise]) as IResponse
     } catch (err) {
       // 请求失败或超时，都会抛出异常并被捕获处理
 
@@ -230,14 +230,14 @@ export class ApiSharp {
     return this.cache.clear()
   }
 
-  private sendRequest(api: ProcessedApiDescriptor): Promise<AxiosResponse> {
-    return this.axios.request({
+  private sendRequest(api: ProcessedApiDescriptor): Promise<IResponse> {
+    return this.httpClient.request({
       baseURL: api.baseURL,
       url: api.url,
       method: api.method,
       headers: api.headers,
-      params: api.method === "GET" ? api.params : {},
-      data: api.method === "POST" ? api.params : {}
+      query: api.method === "GET" ? api.params : {},
+      body: api.method === "POST" ? api.params : {}
     })
   }
 

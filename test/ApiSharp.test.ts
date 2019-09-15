@@ -1,7 +1,7 @@
 import axios from "axios"
 import PropTypes from "prop-types"
 import { ApiSharp, defaultConfig, ApiSharpOptions } from "../src/ApiSharp"
-import { ApiDescriptor, ProcessedApiDescriptor } from "../src/ApiDescriptor"
+import { ApiDescriptor, ProcessedApiDescriptor } from "../src/types/ApiDescriptor"
 import { identity } from "../src/utils";
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
@@ -237,7 +237,7 @@ describe("测试 ApiSharp.request()", () => {
     apiSharp.clearCache()
   })
   describe("测试 HTTP 请求方法", () => {
-    test("POST 请求正常", async () => {
+    test.only("POST 请求正常", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
       expect(response.data.date).toBe(newPost.date)
