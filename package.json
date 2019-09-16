@@ -9,12 +9,12 @@
   ],
   "scripts": {
     "start": "tsdx watch",
-    "build": "npm run clean && tsdx build --format cjs,esm,umd --name ApiSharp",
+    "build": "tsdx build --format cjs,esm,umd --name ApiSharp",
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
     "coverage": "jest --coverage",
     "clean": "[ -d 'dist' ] && rm -rf dist || echo 'no such directory \"dist\"'",
-    "server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
+    "server": "json-server -p 4000 ./test/server/db.json --middlewares ./test/server/middleware.js",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "semantic-release": "semantic-release"
   },
@@ -38,6 +38,7 @@
     "babel-jest": "^24.9.0",
     "husky": "^3.0.0",
     "json-server": "^0.15.0",
+    "parcel": "^1.12.3",
     "prettier": "^1.18.2",
     "pretty-quick": "^1.11.1",
     "semantic-release": "^15.13.24",
@@ -61,10 +62,10 @@
       "__DEV__": true
     },
     "testMatch": [
-      "<rootDir>/test/*.test.ts"
+      "<rootDir>/test/api-sharp/*.test.ts"
     ],
     "watchPathIgnorePatterns": [
-      "<rootDir>/server/",
+      "<rootDir>/test/server/",
       "<rootDir>/node_modules/"
     ]
   }

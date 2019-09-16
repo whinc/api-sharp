@@ -1,4 +1,4 @@
-import { HttpHeader } from 'types/ApiDescriptor'
+import { HttpHeader } from "types/ApiDescriptor"
 
 export function isString(v: any): v is string {
   return typeof v === "string"
@@ -37,8 +37,13 @@ export function getDefault(...args) {
 
 export function encodeQuery(query: Object): string {
   return Object.keys(query).reduce((q, k) => {
-    return (q ?  q + "&" : q) + (encodeURIComponent(k) + "=" + encodeURIComponent(query[k]))
+    return (q ? q + "&" : q) + (encodeURIComponent(k) + "=" + encodeURIComponent(query[k]))
   }, "")
+}
+
+export function formatFullUrl(baseURL, url, query) {
+  const queryString = encodeQuery(query)
+  return baseURL + url + (queryString ? "?" : "") + queryString
 }
 
 export function formatResponseHeaders(headers: string): HttpHeader {
