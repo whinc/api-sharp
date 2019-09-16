@@ -12,11 +12,13 @@ import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import PropTypes from "prop-types"
 import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity, getDefault } from "./utils"
-import {ICache, ExpireCache} from './cache'
-import {IHttpClient, IResponse, WebXhrClient} from './http_client'
+import { ICache, ExpireCache } from "./cache"
+import { IHttpClient, IResponse, WebXhrClient } from "./http_client"
 
 // 全局配置
 export interface ApiSharpOptions {
+  httpClient?: IHttpClient
+  cache?: ICache
   baseURL?: string
   method?: HttpMethod
   headers?: HttpHeader
@@ -38,7 +40,9 @@ export class ApiSharpRequestError extends Error {
 }
 
 export const defaultConfig = {
-  url: '',
+  httpClient: new WebXhrClient(),
+  cache: new ExpireCache<Promise<IResponse>>(),
+  url: "",
   baseURL: "",
   headers: {},
   enableMock: false,
@@ -118,9 +122,9 @@ export class ApiSharp {
   private readonly logFormatter: LogFormatter
 
   constructor(options: ApiSharpOptions = {}) {
-    this.httpClient = new WebXhrClient()
-    // this.httpClient = new WebAxiosClient()
-    this.cache = new ExpireCache<Promise<IResponse>>()
+    // this.httpClient = new WebXhrClient()
+    this.httpClient = getDefault(options.httpClient, defaultConfig.httpClient)
+    this.cache = getDefault(options.cache, defaultConfig.cache)
     this.baseURL = getDefault(options.baseURL, defaultConfig.baseURL)
     this.method = getDefault(options.method, defaultConfig.method)
     this.headers = getDefault(options.headers, defaultConfig.headers)
@@ -177,7 +181,7 @@ export class ApiSharp {
 
     try {
       // 发起请求
-      res = await Promise.race([requestPromise, timeoutPromise]) as IResponse
+      res = (await Promise.race([requestPromise, timeoutPromise])) as IResponse
     } catch (err) {
       // 请求失败或超时，都会抛出异常并被捕获处理
 
@@ -263,7 +267,7 @@ export class ApiSharp {
     } else {
       _api.baseURL = api.baseURL
     }
-    _api.baseURL = _api.baseURL.replace(/\/+$/, '')
+    _api.baseURL = _api.baseURL.replace(/\/+$/, "")
 
     // 请求方法
     if (isUndefined(api.method)) {
