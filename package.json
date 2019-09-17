@@ -62,7 +62,7 @@
       "__DEV__": true
     },
     "testMatch": [
-      "<rootDir>/test/api-sharp/*.test.ts"
+      "<rootDir>/test/api_sharp/*.test.ts"
     ],
     "watchPathIgnorePatterns": [
       "<rootDir>/test/server/",
