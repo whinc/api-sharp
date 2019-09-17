@@ -7,7 +7,7 @@ import {
   Transformer,
   LogFormatter,
   Params
-} from "./types/ApiDescriptor"
+} from "./types"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import PropTypes from "prop-types"

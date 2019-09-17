@@ -1,4 +1,4 @@
-import { HttpHeader } from "types/ApiDescriptor"
+import { HttpHeader } from "./types"
 
 export function isString(v: any): v is string {
   return typeof v === "string"
