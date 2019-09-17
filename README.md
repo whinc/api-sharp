@@ -1,14 +1,12 @@
 <h1 align="center">Api Sharp</h1>
 
 <div align="center">
-Api Sharp 是一个声明式、可配置、可扩展的 API 接口请求库。从业务开发实践中提炼了常用的配置项，通过简单配置可快速封装适合自身业务的网络请求服务。
+api-sharp 是一个声明式、可扩展、跨平台的 JavaScript 网络请求库。
 
 <p>
 
 ![npm](https://img.shields.io/npm/v/api-sharp)
-![](https://img.shields.io/bundlephobia/minzip/api-sharp)
-![](https://img.shields.io/npm/dt/api-sharp)
-![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)
+![](https://img.shields.io/bundlephobia/minzip/api-sharp) ![](https://img.shields.io/npm/dt/api-sharp) ![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)
 
 </p>
 
@@ -16,9 +14,9 @@ Api Sharp 是一个声明式、可配置、可扩展的 API 接口请求库。�
 
 ## 特性
 
-- 简单，只有一个`request()`方法
-- 声明式，通过 JS 对象描述接口
-- 接口配置丰富
+- 简单
+- 声明式
+- 配置丰富
   - 请求基地址
   - 请求地址
   - 请求方法
@@ -32,7 +30,7 @@ Api Sharp 是一个声明式、可配置、可扩展的 API 接口请求库。�
   - 数据 mock
   - 失败重试
   - 自定义日志
-- 支持`d.ts`类型定义
+- 包含 TS 类型定义
 
 ## 安装
 
@@ -42,8 +40,6 @@ Api Sharp 是一个声明式、可配置、可扩展的 API 接口请求库。�
 $ npm install api-sharp
 ```
 
-> 注意：当前版本的 ApiSharp 依赖于 axios，需要在项目中先引入 axios。后续版本会移除对 axios 的依赖。
-
 ## 示例
 
 创建 ApiSharp 实例
@@ -52,34 +48,78 @@ $ npm install api-sharp
 import ApiSharp from "api-sharp"
 
 // 创建实例，可以传入全局配置，省略使用默认配置
-const apiSharp = new ApiSharp(/* options */)
+const apiSharp = new ApiSharp({...})
 ```
 
 发送 GET 请求
 
 ```js
-apiSharp.request({
-  baseURL: "https://api-mock-ti6c29r88wgm.runkit.sh",
+const response = await apiSharp.request({ url: "/json/server_date" })
+```
+
+发送 POST 请求
+
+```js
+const response = await apiSharp.request({
   url: "/json/server_date",
-  method: "GET",
-  description: "服务器时间(JSON)",
+  method: "POST",
   params: {
     format: "json"
   }
 })
 ```
 
-发送 POST 请求
+开启缓存（仅支持 GET 请求）
 
 ```js
-apiSharp.request({
-  baseURL: "https://api-mock-ti6c29r88wgm.runkit.sh",
+const apiDescriptor = {
   url: "/json/server_date",
-  method: "POST",
-  description: "服务器时间(JSON)",
+  enableCache: true,
+  cacheTime: 10 * 1000
+}
+const response1 = await apiSharp.request(apiDescriptor)
+const response2 = await apiSharp.request(apiDescriptor)
+expect(response1.from).toEqual("network")
+expect(response2.from).toEqual("cache")
+expect(response1.data).toEqual(response2.data)
+```
+
+开启参数类型校验
+
+```js
+// 引入 prop-types
+import PropTypes from "prop-types"
+
+const response = await apiSharp.request({
+  url: "/json/server_date",
+  paramsType: {
+    name: PropTypes.string.isRequired
+  },
   params: {
-    format: "json"
+    name: "jim"
   }
+})
+// 如果参数 name 省略或者不是 string 类型，控制台打印错误提示，但不会阻止请求发出
+```
+
+开启接口数据 mock
+
+```js
+const response = await apiSharp.request({
+  url: "/json/server_date",
+  enableMock: true,
+  mockData: "mock data"
+})
+expect(response.data).toEqual("mock data")
+```
+
+开启失败重试
+
+```js
+const response = await apiSharp.request({
+  url: "/json/server_date",
+  enableRetry: true,
+  retryTimes: 3
 })
 ```
 
@@ -89,18 +129,17 @@ apiSharp.request({
 
 ## 文档
 
-ApiSharp 暴露了一个 request 方法，通过该方法完成所有网络请求任务。
+### API
 
 ```typescript
-/**
- * 请求接口数据
- * @params api - 接口描述对象
- * @returns - 包含响应结果的 Promise 对象
- */
-async request(api: ApiDescriptor): Promise<ApiSharpResponse>
+class ApiSharp {
+  // 请求数据
+  request(url: string): Promise<IResponse>
+  request(api: ApiDescriptor): Promise<IResponse>
+}
 ```
 
-接口描述对象支持的配置项如下：
+**ApiDescriptor** 的 TS 定义：
 
 ```typescript
 export interface ApiDescriptor {
@@ -195,21 +234,36 @@ export interface ApiDescriptor {
 }
 ```
 
-## 设计
+**IResponse** 的 TS 定义：
 
-api-sharp 主要针对 Web 浏览器，不过它被设计成平台无关的，通过适配器可以很方便的支持新平台。
+```typescript
+export interface IResponse<T = any> {
+  // HTTP 响应状态码
+  status: number
+  // HTTP 响应状态描述
+  statusText: string
+  // HTTP 响应数据
+  data: T
+  // HTTP 响应头
+  headers: HttpHeader
+  // 本次请求响应数据的来源
+  from: "network" | "cache" | "mock"
+  // 本次请求的接口描述符
+  api: ProcessedApiDescriptor
+}
+```
 
-api-sharp 的架构图。
+## 架构
 
-![](arch.png)
+api-sharp 主要针对 Web 浏览器，不过它被设计成平台无关的，通过适配器可以很方便的支持新平台。下面是它的架构图，对上层提供配置项以支持声明式、可扩展的行为，对下层提供适配器以适应不同平台，内部专注于负责实现那些可跨平台通用的额的网络请求逻辑，如缓存、重试、mock 等。
 
-api-sharp 的类图。
+![](docs/arch.png)
 
-![](class.svg)
+ApiSharp 内部有一个`IHttpClient`的请求接口，通过不同的具体实现完成对各个平台的适配。
 
-## 共建
+![](docs/class.png)
 
-非常欢迎提 issue 或 PR 来一起改进该项目，下面是一份上手指南。
+## 参与共建
 
 克隆项目后，切换到项目根目录下，并安装依赖
 
@@ -227,6 +281,24 @@ $ npm run test:watch
 ```
 
 执行后便可以在`src`目录下修改源码，在`test`目录编写测试用例进行测试
+
+项目目录结构如下：
+
+```
+docs                // 文档
+src                 // 源码
+  |--cache          // 缓存实现
+  |--http_client    // HTTP请求实现
+  |--types          // 内部类型定义
+test
+  |--api_sharp      // 单元测试
+  |--server         // 接口测试服务
+types               // 全局类型定义
+babel.config.js     // babel 配置
+package.json        // 包配置
+tsconfig.json       // TS 编译配置
+
+```
 
 ## LICENSE
 
