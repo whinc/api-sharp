@@ -1,4 +1,5 @@
 import { Validator } from "prop-types"
+import { IResponse } from "http_client"
 
 export type HttpMethod = "get" | "GET" | "post" | "POST"
 // | 'delete'
@@ -129,24 +130,7 @@ export interface ProcessedApiDescriptor {
   [name: string]: any
 }
 
-export interface ApiSharpResponse<T> {
-  /**
-   * 接口返回数据
-   * 返回 HTTP 响应数据经过数据转换后的值
-   */
-  data: T
-  /**
-   * HTTP 状态码
-   */
-  status: number
-  /**
-   * HTTP 状态码描述
-   */
-  statusText: string
-  /**
-   * HTTP 响应头部
-   */
-  headers: HttpHeader
+export interface ApiResponse<T> extends IResponse<T> {
   /**
    * 请求接口描述符
    */

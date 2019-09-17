@@ -2,7 +2,7 @@ import { formatFullUrl, formatResponseHeaders, isPlainObject } from "../utils"
 import { IHttpClient, IRequest, IResponse } from "./IHttpClient"
 
 export default class WebXhrClient implements IHttpClient {
-  async request(options: IRequest): Promise<IResponse> {
+  async request<T>(options: IRequest): Promise<IResponse<T>> {
     return new Promise(resolve => {
       const xhr = new XMLHttpRequest()
       const fullUrl = formatFullUrl(options.baseURL, options.url, options.query)

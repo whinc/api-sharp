@@ -2,7 +2,7 @@ import {
   ApiDescriptor,
   HttpMethod,
   ProcessedApiDescriptor,
-  ApiSharpResponse,
+  ApiResponse,
   HttpHeader,
   Transformer,
   LogFormatter,
@@ -40,7 +40,7 @@ export class ApiSharpRequestError extends Error {
 
 export const defaultConfig = {
   httpClient: new WebXhrClient(),
-  cache: new ExpireCache<Promise<IResponse>>(),
+  cache: new ExpireCache<Promise<IResponse<any>>>(),
   url: "",
   baseURL: "",
   headers: {},
@@ -106,7 +106,7 @@ export const defaultConfig = {
 
 export class ApiSharp {
   private readonly httpClient: IHttpClient
-  private readonly cache: ICache<Promise<IResponse>>
+  private readonly cache: ICache<Promise<IResponse<any>>>
   private readonly baseURL: string
   private readonly method: HttpMethod
   private readonly headers: HttpHeader
@@ -140,7 +140,7 @@ export class ApiSharp {
   /**
    * 发送请求
    */
-  async request(_api: ApiDescriptor): Promise<ApiSharpResponse<any>> {
+  async request<T>(_api: ApiDescriptor): Promise<ApiResponse<T>> {
     const api = this.processApi(_api)
 
     this.logRequest(api)
@@ -150,7 +150,7 @@ export class ApiSharp {
       return { data: api.mockData, from: "mock", api, headers: {}, status: 200, statusText: "OK(mock)" }
     }
 
-    let requestPromise: Promise<IResponse>
+    let requestPromise: Promise<IResponse<T>>
     let cachedKey
     let hitCache = false
 
@@ -167,19 +167,19 @@ export class ApiSharp {
         requestPromise = this.cache.get(cachedKey)!
         hitCache = true
       } else {
-        requestPromise = this.sendRequest(api)
+        requestPromise = this.sendRequest<T>(api)
         hitCache = false
         this.cache.set(cachedKey, requestPromise, { timeout: api.cacheTime })
       }
     } else {
-      requestPromise = this.sendRequest(api)
+      requestPromise = this.sendRequest<T>(api)
     }
 
-    let res: IResponse
+    let res: IResponse<T>
 
     try {
       // 发起请求
-      res = (await Promise.race([requestPromise, timeoutPromise])) as IResponse
+      res = (await Promise.race([requestPromise, timeoutPromise])) as IResponse<T>
     } catch (err) {
       // 请求失败或超时，都会抛出异常并被捕获处理
 
@@ -232,8 +232,8 @@ export class ApiSharp {
     return this.cache.clear()
   }
 
-  private sendRequest(api: ProcessedApiDescriptor): Promise<IResponse> {
-    return this.httpClient.request({
+  private sendRequest<T>(api: ProcessedApiDescriptor): Promise<IResponse<T>> {
+    return this.httpClient.request<T>({
       baseURL: api.baseURL,
       url: api.url,
       method: api.method,
