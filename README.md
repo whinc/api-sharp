@@ -29,7 +29,7 @@ Api Sharp 是一个声明式、可配置、可扩展的 API 接口请求库。�
   - 请求参数转换
   - 响应数据转换
   - 缓存
-  - 数据mock
+  - 数据 mock
   - 失败重试
   - 自定义日志
 - 支持`d.ts`类型定义
@@ -37,46 +37,50 @@ Api Sharp 是一个声明式、可配置、可扩展的 API 接口请求库。�
 ## 安装
 
 通过 npm 安装（或者 yarn）
+
 ```bash
 $ npm install api-sharp
 ```
 
->注意：当前版本的 ApiSharp 依赖于 axios，需要在项目中先引入 axios。后续版本会移除对 axios 的依赖。
+> 注意：当前版本的 ApiSharp 依赖于 axios，需要在项目中先引入 axios。后续版本会移除对 axios 的依赖。
 
 ## 示例
 
 创建 ApiSharp 实例
+
 ```js
-import ApiSharp from 'api-sharp'
+import ApiSharp from "api-sharp"
 
 // 创建实例，可以传入全局配置，省略使用默认配置
 const apiSharp = new ApiSharp(/* options */)
 ```
 
 发送 GET 请求
+
 ```js
 apiSharp.request({
   baseURL: "https://api-mock-ti6c29r88wgm.runkit.sh",
   url: "/json/server_date",
-  method: 'GET',
+  method: "GET",
   description: "服务器时间(JSON)",
   params: {
-    format: 'json'
+    format: "json"
   }
-});
+})
 ```
 
 发送 POST 请求
+
 ```js
 apiSharp.request({
   baseURL: "https://api-mock-ti6c29r88wgm.runkit.sh",
   url: "/json/server_date",
-  method: 'POST',
+  method: "POST",
   description: "服务器时间(JSON)",
   params: {
-    format: 'json'
+    format: "json"
   }
-});
+})
 ```
 
 在线示例
@@ -97,6 +101,7 @@ async request(api: ApiDescriptor): Promise<ApiSharpResponse>
 ```
 
 接口描述对象支持的配置项如下：
+
 ```typescript
 export interface ApiDescriptor {
   /**
@@ -190,11 +195,24 @@ export interface ApiDescriptor {
 }
 ```
 
+## 设计
+
+api-sharp 主要针对 Web 浏览器，不过它被设计成平台无关的，通过适配器可以很方便的支持新平台。
+
+api-sharp 的架构图。
+
+![](arch.png)
+
+api-sharp 的类图。
+
+![](class.svg)
+
 ## 共建
 
 非常欢迎提 issue 或 PR 来一起改进该项目，下面是一份上手指南。
 
 克隆项目后，切换到项目根目录下，并安装依赖
+
 ```bash
 $ git clone <path_to_project>
 $ cd <path_to_project>
@@ -202,6 +220,7 @@ $ npm install
 ```
 
 下面两条指令分别启动 node API 服务和 jest 测试
+
 ```bash
 $ npm run server
 $ npm run test:watch

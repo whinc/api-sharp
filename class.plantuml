@@ -1,0 +1,21 @@
+@startuml class
+interface IHttpClient {
+  request(api: ProcessedApiDescriptor): Promise<IResponse>
+}
+class WebHttpClient
+note bottom of WebHttpClient: 浏览器端
+class NodeHttpClient
+note bottom of NodeHttpClient: node.js端
+class MinaHttpClient
+note bottom of MinaHttpClient: 小程序端
+
+class ApiSharp {
+  -httpClient: IHttpClient
+  +request(api: ApiDescriptor): Promise<IResponse>
+}
+
+ApiSharp --> IHttpClient
+IHttpClient <|-- WebHttpClient 
+IHttpClient <|-- NodeHttpClient
+IHttpClient <|-- MinaHttpClient
+@enduml
