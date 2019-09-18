@@ -140,7 +140,7 @@ export class ApiSharp {
   /**
    * 发送请求
    */
-  async request<T>(_api: ApiDescriptor): Promise<ApiResponse<T>> {
+  async request<T>(_api: ApiDescriptor | string): Promise<ApiResponse<T>> {
     const api = this.processApi(_api)
 
     this.logRequest(api)
@@ -247,8 +247,12 @@ export class ApiSharp {
     return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.params)}`
   }
 
-  private processApi(api: ApiDescriptor): ProcessedApiDescriptor {
+  private processApi(api: ApiDescriptor | string): ProcessedApiDescriptor {
     invariant(api, "api 为空")
+
+    if (isString(api)) {
+      api = { url: api }
+    }
 
     const _api = { ...api } as ProcessedApiDescriptor
 

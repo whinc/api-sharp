@@ -137,6 +137,11 @@ describe("测试 ApiSharp.processApi() 方法", () => {
       const api = null
       expect(() => apiSharp.processApi(api!)).toThrow()
     })
+    test("api 为 string 时，等价于 {url: string}", () => {
+      const api = "http://xyz.com"
+      const _api = apiSharp.processApi(api)
+      expect(_api).toHaveProperty('url', api)
+    })
   })
 
   describe("测试 api.url 取值", () => {
