@@ -1,7 +1,7 @@
 import axios from "axios"
 import PropTypes from "prop-types"
 import { ApiSharp, defaultConfig, ApiSharpOptions } from "../../src/ApiSharp"
-import { ApiDescriptor, ProcessedApiDescriptor } from "../../src/types/ApiDescriptor"
+import { ApiDescriptor, ProcessedApiDescriptor } from "../../src/types"
 import { WebXhrClient } from "../../src/http_client"
 import { identity } from "../../src/utils"
 
