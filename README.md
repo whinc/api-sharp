@@ -5,8 +5,8 @@ api-sharp 是一个声明式、可扩展、跨平台的 JavaScript 网络请求�
 
 <p>
 
-![npm](https://img.shields.io/npm/v/api-sharp)
-![](https://img.shields.io/bundlephobia/minzip/api-sharp) ![](https://img.shields.io/npm/dt/api-sharp) ![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)
+[![npm](https://img.shields.io/npm/v/api-sharp)](https://www.npmjs.com/package/api-sharp)
+![](https://img.shields.io/bundlephobia/minzip/api-sharp) ![](https://img.shields.io/npm/dt/api-sharp) [![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)](https://circleci.com/dashboard)
 
 </p>
 
@@ -30,6 +30,7 @@ api-sharp 是一个声明式、可扩展、跨平台的 JavaScript 网络请求�
   - 数据 mock
   - 失败重试
   - 自定义日志
+  - ...
 - 包含 TS 类型定义
 
 ## 安装
