@@ -11,12 +11,12 @@ jobs:
       - run:
           name: install
           command: npm install
-      - run:
-          name: start api server
-          command: npm run server
-      - run:
-          name: test
-          command: npm run test
+      # - run:
+      #     name: start api server
+      #     command: npm run server
+      # - run:
+      #     name: test
+      #     command: npm run test
       - run:
           name: build
           command: npm run build
