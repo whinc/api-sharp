@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: 'circleci/node:latest'
+      - image: "circleci/node:latest"
     branches:
       only:
         - master
@@ -11,12 +11,15 @@ jobs:
       - run:
           name: install
           command: npm install
-      # - run:
-      #     name: test
-      #     command: npm run test
+      - run:
+          name: start api server
+          command: npm run server
+      - run:
+          name: test
+          command: npm run test
       - run:
           name: build
           command: npm run build
       - run:
           name: release
-          command: npm run semantic-release
+          command: npm run release
