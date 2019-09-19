@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "start": "tsdx watch",
-    "build": "tsdx build --format esm,umd --name ApiSharp",
+    "build": "tsdx build",
     "test": "tsdx test",
     "test:watch": "tsdx test --watch",
     "coverage": "jest --coverage",
