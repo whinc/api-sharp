@@ -16,7 +16,7 @@
     "clean": "[ -d 'dist' ] && rm -rf dist || echo 'no such directory \"dist\"'",
     "server": "json-server -p 4000 ./test/server/db.json --middlewares ./test/server/middleware.js",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
-    "semantic-release": "semantic-release"
+    "release": "semantic-release"
   },
   "husky": {
     "hooks": {
@@ -31,6 +31,8 @@
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-typescript": "^7.3.3",
+    "@semantic-release/changelog": "^3.0.4",
+    "@semantic-release/git": "^7.0.16",
     "@types/jest": "^24.0.15",
     "@types/lodash": "^4.14.137",
     "@types/prop-types": "^15.7.2",
