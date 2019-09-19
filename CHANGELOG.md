@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/whinc/api-sharp/compare/v1.3.1...v1.3.2) (2019-09-19)
+
+
+### Bug Fixes
+
+* 修复导出错误 ([6149301](https://github.com/whinc/api-sharp/commit/6149301))
+
 ## [1.3.1](https://github.com/whinc/api-sharp/compare/v1.3.0...v1.3.1) (2019-09-19)
 
 ### Bug Fixes
