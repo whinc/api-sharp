@@ -7,6 +7,7 @@ export interface IRequest {
   query: any
   body: any
   headers: HttpHeader
+  timeout: number
 }
 
 export interface IHttpClient {

@@ -34,6 +34,7 @@ export interface ApiSharpOptions {
 
 export class ApiSharpRequestError extends Error {
   constructor(message?: string, public api?: ProcessedApiDescriptor) {
+
     super(message)
   }
 }
@@ -138,7 +139,9 @@ export class ApiSharp {
   }
 
   /**
-   * 发送请求
+   * 发送 HTTP 请求
+   * @param api - 接口描述符
+   * @return 响应数据
    */
   async request<T>(_api: ApiDescriptor | string): Promise<ApiResponse<T>> {
     const api = this.processApi(_api)
@@ -153,12 +156,6 @@ export class ApiSharp {
     let requestPromise: Promise<IResponse<T>>
     let cachedKey
     let hitCache = false
-
-    // 构造一个超时时自动 reject 的 Promise
-    const timeoutPromise: Promise<ApiSharpRequestError> = new Promise((_resolve, reject) => {
-      const error = new Error(`请求超时(${api.timeout}ms)`)
-      setTimeout(() => reject(error), api.timeout)
-    })
 
     // 处理缓存
     if (api.enableCache) {
@@ -179,7 +176,7 @@ export class ApiSharp {
 
     try {
       // 发起请求
-      res = (await Promise.race([requestPromise, timeoutPromise])) as IResponse<T>
+      res = await requestPromise
     } catch (err) {
       // 请求失败或超时，都会抛出异常并被捕获处理
 
@@ -238,6 +235,7 @@ export class ApiSharp {
       url: api.url,
       method: api.method,
       headers: api.headers,
+      timeout: api.timeout,
       query: api.method === "GET" ? api.params : {},
       body: api.method === "POST" ? api.params : {}
     })

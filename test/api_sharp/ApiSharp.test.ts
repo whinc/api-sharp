@@ -561,8 +561,24 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
   describe("测试接口超时", () => {
-    test("接口请求超时，应抛出异常", async () => {
+    test("接口请求未超时，不抛出异常", async () => {
       const newPost = mockOnePost()
+      expect.assertions(0)
+      try {
+        await apiSharp.request({
+          baseURL,
+          url: "/posts",
+          method: "POST",
+          params: newPost,
+          timeout: 100 * 1000
+        })
+      } catch (err) {
+        expect(err).toBeInstanceOf(Error)
+      }
+    })
+    test.only("接口请求超时，抛出异常", async () => {
+      const newPost = mockOnePost()
+      expect.assertions(1)
       try {
         await apiSharp.request({
           baseURL,
@@ -571,10 +587,8 @@ describe("测试 ApiSharp.request()", () => {
           params: newPost,
           timeout: 1
         })
-        expect.assertions(0)
       } catch (err) {
-        expect(err).toBeInstanceOf(Error)
-        expect(err.message).toMatch("请求超时")
+        expect(err.message).toMatch('请求超时')
       }
     })
   })

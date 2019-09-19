@@ -9,7 +9,8 @@ export default class WebAxiosClient implements IHttpClient {
       method: options.method,
       params: options.method === "GET" ? options.query : null,
       data: options.method === "POST" ? options.body : null,
-      headers: options.headers
+      headers: options.headers,
+      timeout: options.timeout
     })
 
     return {
