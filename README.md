@@ -46,7 +46,7 @@ $ npm install api-sharp
 创建 ApiSharp 实例
 
 ```js
-import ApiSharp from "api-sharp"
+import {ApiSharp} from "api-sharp"
 
 // 创建实例，可以传入全局配置，省略使用默认配置
 const apiSharp = new ApiSharp({...})
@@ -253,6 +253,10 @@ export interface IResponse<T = any> {
   api: ProcessedApiDescriptor
 }
 ```
+
+## 更新日志
+
+[CHANGELOG](./CHANGELOG.md)
 
 ## 架构
 
