@@ -28,13 +28,6 @@ export function identity<T>(v: T): T {
   return v
 }
 
-export function getDefault(...args) {
-  for (let v of args) {
-    if (!isUndefined(v)) return v
-  }
-  return undefined
-}
-
 export function encodeQuery(query: Object): string {
   return Object.keys(query).reduce((q, k) => {
     return (q ? q + "&" : q) + (encodeURIComponent(k) + "=" + encodeURIComponent(query[k]))

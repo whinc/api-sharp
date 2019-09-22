@@ -4,8 +4,8 @@ export interface IRequest {
   baseURL: string
   url: string
   method: HttpMethod
-  query: any
-  body: any
+  query: Object
+  body: Object
   headers: HttpHeader
   timeout: number
 }

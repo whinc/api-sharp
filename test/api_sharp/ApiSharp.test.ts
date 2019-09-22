@@ -1,6 +1,6 @@
 import axios from "axios"
 import PropTypes from "prop-types"
-import { ApiSharp, defaultConfig, ApiSharpOptions } from "../../src/ApiSharp"
+import { ApiSharp, defaultOptions, ApiSharpOptions } from "../../src/ApiSharp"
 import { ApiDescriptor, ProcessedApiDescriptor } from "../../src/types"
 import { WebXhrClient } from "../../src/http_client"
 import { identity } from "../../src/utils"
@@ -78,18 +78,18 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     const api = { url: "http://anything" }
     const apiSharp: any = new ApiSharp()
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
-    expect(_api.baseURL).toBe(defaultConfig.baseURL)
-    expect(_api.method).toBe(defaultConfig.method)
-    expect(_api.headers).toEqual(defaultConfig.headers)
-    // expect(_api.paramsTransformer).toBe(defaultConfig.paramsTransformer)
-    expect(_api.returnsTransformer).toBe(defaultConfig.returnsTransformer)
-    expect(_api.enableCache).toBe(defaultConfig.enableCache)
-    expect(_api.cacheTime).toBe(defaultConfig.cacheTime)
-    expect(_api.enableRetry).toBe(defaultConfig.enableRetry)
-    expect(_api.retryTimes).toBe(defaultConfig.retryTimes)
-    expect(_api.timeout).toBe(defaultConfig.timeout)
-    expect(_api.enableLog).toBe(defaultConfig.enableLog)
-    expect(_api.logFormatter).toBe(defaultConfig.logFormatter)
+    expect(_api.baseURL).toBe(defaultOptions.baseURL)
+    expect(_api.method).toBe(defaultOptions.method)
+    expect(_api.headers).toEqual(defaultOptions.headers)
+    // expect(_api.transformRequest).toBe(defaultConfig.transformRequest)
+    expect(_api.transformResponse).toBe(defaultOptions.transformResponse)
+    expect(_api.enableCache).toBe(defaultOptions.enableCache)
+    expect(_api.cacheTime).toBe(defaultOptions.cacheTime)
+    expect(_api.enableRetry).toBe(defaultOptions.enableRetry)
+    expect(_api.retryTimes).toBe(defaultOptions.retryTimes)
+    expect(_api.timeout).toBe(defaultOptions.timeout)
+    expect(_api.enableLog).toBe(defaultOptions.enableLog)
+    expect(_api.logFormatter).toBe(defaultOptions.logFormatter)
   })
 
   test("当 ApiSharp.request() 中未指定配置项，但 new ApiSharp() 中指定了时，则使用 new ApiSharp() 中的配置，", () => {
@@ -100,7 +100,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
       headers: {
         a: "a"
       },
-      returnsTransformer: v => v,
+      transformResponse: v => v,
       enableCache: true,
       cacheTime: 9999,
       enableRetry: true,
@@ -117,17 +117,17 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     const apiSharp: any = new ApiSharp(options)
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
     expect(_api.baseURL).toBe(options.baseURL)
-    expect(_api.method).toBe(options.method)
+    expect(_api.method).toBe(options.method.toUpperCase())
     expect(_api.headers).toEqual(options.headers)
-    // expect(_api.paramsTransformer).toBe(options.paramsTransformer)
-    expect(_api.returnsTransformer).toBe(options.returnsTransformer)
+    // expect(_api.transformRequest).toBe(options.transformRequest)
+    expect(_api.transformResponse).toBe(options.transformResponse)
     expect(_api.enableCache).toBe(options.enableCache)
     expect(_api.cacheTime).toBe(options.cacheTime)
     expect(_api.enableRetry).toBe(options.enableRetry)
     expect(_api.retryTimes).toBe(options.retryTimes)
     expect(_api.timeout).toBe(options.timeout)
     expect(_api.enableLog).toBe(options.enableLog)
-    expect(_api.logFormatter).toBe(options.logFormatter)
+    expect(_api.logFormatter).toEqual(options.logFormatter)
   })
 })
 
@@ -540,7 +540,7 @@ describe("测试 ApiSharp.request()", () => {
         params: {
           id
         },
-        paramsTransformer: params => ({ ...params, id: String(params.id) })
+        transformRequest: params => ({ ...params, id: String(params.id) })
       }
       const _api = apiSharp.processApi(api)
       expect(_api.params).toEqual({ id: String(id) })
@@ -555,7 +555,7 @@ describe("测试 ApiSharp.request()", () => {
         url: "/posts",
         method: "POST",
         params: newPost,
-        returnsTransformer: returns => ({ ...returns, extra: 100 })
+        transformResponse: returns => ({ ...returns, extra: 100 })
       })
       expect(response.data.extra).toEqual(100)
     })
@@ -576,7 +576,7 @@ describe("测试 ApiSharp.request()", () => {
         expect(err).toBeInstanceOf(Error)
       }
     })
-    test.only("接口请求超时，抛出异常", async () => {
+    test("接口请求超时，抛出异常", async () => {
       const newPost = mockOnePost()
       expect.assertions(1)
       try {

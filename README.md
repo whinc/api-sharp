@@ -178,14 +178,14 @@ export interface ApiDescriptor {
   paramsType?: ParamsType
   /**
    * 请求参数转换函数
-   * 用户发起调用 -> params(原始参数) -> paramsTransformer(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
+   * 用户发起调用 -> params(原始参数) -> transformRequest(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
    */
-  paramsTransformer?: Transformer<Params>
+  transformRequest?: Transformer<Params>
   /**
    * 返回数据转换函数
-   * 接收 HTTP 响应 -> returns(返回数据) -> returnsTransformer(数据转换) -> 用户接收结果
+   * 接收 HTTP 响应 -> returns(返回数据) -> transformResponse(数据转换) -> 用户接收结果
    */
-  returnsTransformer?: Transformer<any>
+  transformResponse?: Transformer<any>
   /**
    * 开启缓存，默认关闭
    * 并发请求相同接口且参数相同时，实际只会发出一个请求，因为缓存的是请求的 Promise。

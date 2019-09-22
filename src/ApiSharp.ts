@@ -3,61 +3,49 @@ import {
   HttpMethod,
   ProcessedApiDescriptor,
   ApiResponse,
-  HttpHeader,
-  Transformer,
-  LogFormatter,
-  Params
+  ReturnTypeFn,
 } from "./types"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import PropTypes from "prop-types"
-import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity, getDefault } from "./utils"
+import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity } from "./utils"
 import { ICache, ExpireCache } from "./cache"
 import { IHttpClient, IResponse, WebXhrClient } from "./http_client"
 
-// 全局配置
-export interface ApiSharpOptions {
+type optionKeys = 'baseURL' | 'method' | 'headers' | 'enableMock' | 'enableCache' | 'cacheTime' | 'transformRequest' | 'transformResponse' | 'enableRetry' | 'retryTimes' | 'timeout' | 'enableLog' | 'logFormatter'
+/**
+ * 全局配置项
+ */
+export interface ApiSharpOptions extends Pick<ApiDescriptor, optionKeys> {
   httpClient?: IHttpClient
-  baseURL?: string
-  method?: HttpMethod
-  headers?: HttpHeader
-  paramsTransformer?: Transformer<Params>
-  returnsTransformer?: Transformer<any>
-  enableCache?: boolean
-  cacheTime?: number
-  enableRetry?: boolean
-  retryTimes?: number
-  timeout?: number
-  enableLog?: boolean
-  logFormatter?: LogFormatter
+  cache?: ICache<Promise<IResponse<any>>>
 }
 
 export class ApiSharpRequestError extends Error {
   constructor(message?: string, public api?: ProcessedApiDescriptor) {
-
     super(message)
   }
 }
 
-export const defaultConfig = {
+type RemoveReturnFn<T> = {
+  [K in keyof T]: Exclude<T[K], ReturnTypeFn<any>>
+}
+
+export const defaultOptions: Required<Omit<RemoveReturnFn<ApiSharpOptions>, 'transformRequest' | 'transformResponse'> & Pick<ApiSharpOptions, 'transformRequest' | 'transformResponse'>> = {
   httpClient: new WebXhrClient(),
   cache: new ExpireCache<Promise<IResponse<any>>>(),
-  url: "",
   baseURL: "",
   headers: {},
   enableMock: false,
-  mockData: undefined,
   method: "GET",
-  params: {},
-  description: "",
   enableCache: false,
   cacheTime: 5 * 1000,
-  paramsTransformer: identity,
-  returnsTransformer: identity,
+  transformRequest: identity,
+  transformResponse: identity,
   enableRetry: false,
   retryTimes: 1,
   timeout: 60 * 1000,
-  enableLog: process.env.NODE_ENV !== "production",
+  enableLog:  process.env.NODE_ENV !== "production",
   logFormatter: {
     logRequest: (api: ProcessedApiDescriptor) => {
       console.log(
@@ -106,36 +94,14 @@ export const defaultConfig = {
 }
 
 export class ApiSharp {
+  private readonly options: ApiSharpOptions
   private readonly httpClient: IHttpClient
   private readonly cache: ICache<Promise<IResponse<any>>>
-  private readonly baseURL: string
-  private readonly method: HttpMethod
-  private readonly headers: HttpHeader
-  private readonly paramsTransformer: Transformer<Params>
-  private readonly returnsTransformer: Transformer<any>
-  private readonly enableCache: boolean
-  private readonly cacheTime: number
-  private readonly enableRetry: boolean
-  private readonly retryTimes: number
-  private readonly timeout: number
-  private readonly enableLog: boolean
-  private readonly logFormatter: LogFormatter
 
   constructor(options: ApiSharpOptions = {}) {
-    this.httpClient = getDefault(options.httpClient, defaultConfig.httpClient)
-    this.cache = defaultConfig.cache
-    this.baseURL = getDefault(options.baseURL, defaultConfig.baseURL)
-    this.method = getDefault(options.method, defaultConfig.method)
-    this.headers = getDefault(options.headers, defaultConfig.headers)
-    this.paramsTransformer = getDefault(options.paramsTransformer, defaultConfig.paramsTransformer)
-    this.returnsTransformer = getDefault(options.returnsTransformer, defaultConfig.returnsTransformer)
-    this.enableCache = getDefault(options.enableCache, defaultConfig.enableCache)
-    this.cacheTime = getDefault(options.cacheTime, defaultConfig.cacheTime)
-    this.enableRetry = getDefault(options.enableRetry, defaultConfig.enableRetry)
-    this.retryTimes = getDefault(options.retryTimes, defaultConfig.retryTimes)
-    this.timeout = getDefault(options.timeout, defaultConfig.timeout)
-    this.enableLog = getDefault(options.enableLog, defaultConfig.enableLog)
-    this.logFormatter = getDefault(options.logFormatter, defaultConfig.logFormatter)
+    this.options = options
+    this.httpClient = options.httpClient || defaultOptions.httpClient
+    this.cache = options.cache || defaultOptions.cache
   }
 
   /**
@@ -213,7 +179,7 @@ export class ApiSharp {
     }
 
     return {
-      data: api.returnsTransformer(res.data),
+      data: api.transformResponse(res.data),
       from: hitCache ? "cache" : "network",
       api,
       status: res.status,
@@ -245,14 +211,22 @@ export class ApiSharp {
     return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.params)}`
   }
 
+  private mergeApi (api: ApiDescriptor, options: ApiSharpOptions): ApiDescriptor {
+    return {
+      ...options,
+      ...Object.keys(api).filter(key => api[key] !== undefined).reduce((obj, key) => Object.assign(obj, {[key]: api[key]}), {})
+    } as ApiDescriptor
+  }
+
   private processApi(api: ApiDescriptor | string): ProcessedApiDescriptor {
     invariant(api, "api 为空")
 
     if (isString(api)) {
       api = { url: api }
     }
+    api = this.mergeApi(api, this.options)
 
-    const _api = { ...api } as ProcessedApiDescriptor
+    const _api = {...api} as ProcessedApiDescriptor
 
     // 请求地址
     if (!api.url || !String(api.url)) {
@@ -263,7 +237,7 @@ export class ApiSharp {
 
     // 基地址
     if (isUndefined(api.baseURL)) {
-      _api.baseURL = this.baseURL
+      _api.baseURL = defaultOptions.baseURL
     } else {
       _api.baseURL = api.baseURL
     }
@@ -271,7 +245,7 @@ export class ApiSharp {
 
     // 请求方法
     if (isUndefined(api.method)) {
-      _api.method = this.method
+      _api.method = defaultOptions.method
     } else if (isString(api.method) && /get|post/i.test(api.method)) {
       _api.method = api.method.toUpperCase() as HttpMethod
     } else {
@@ -279,23 +253,21 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.headers)) {
-      _api.headers = this.headers
+      _api.headers = defaultOptions.headers
     } else {
       _api.headers = api.headers
     }
 
     // 描述
-    if (isUndefined(api.description)) {
-      _api.description = defaultConfig.description
-    } else if (isFunction(api.description)) {
+    if (isFunction(api.description)) {
       _api.description = String(api.description.call(null, api))
     } else {
-      _api.description = String(api.description)
+      _api.description = api.description || ''
     }
 
     // 开启缓存
     if (isUndefined(api.enableCache)) {
-      _api.enableCache = this.enableCache
+      _api.enableCache = defaultOptions.enableCache
     } else if (isFunction(api.enableCache)) {
       _api.enableCache = !!api.enableCache.call(null, api)
     } else {
@@ -308,34 +280,32 @@ export class ApiSharp {
 
     // 缓存时间
     if (isUndefined(api.cacheTime)) {
-      _api.cacheTime = this.cacheTime
+      _api.cacheTime = defaultOptions.cacheTime
     } else if (isNumber(api.cacheTime)) {
       _api.cacheTime = api.cacheTime
     } else if (isFunction(api.cacheTime)) {
       _api.cacheTime = api.cacheTime.call(null, api)
     } else {
-      _api.cacheTime = this.cacheTime
+      _api.cacheTime = defaultOptions.cacheTime
       warning(false, `cacheTime 期望 number/function 类型，实际类型为${typeof api.cacheTime}，自动使用默认值`)
     }
 
     if (isUndefined(api.enableMock)) {
-      _api.enableMock = defaultConfig.enableMock
+      _api.enableMock = defaultOptions.enableMock
     } else if (isFunction(api.enableMock)) {
       _api.enableMock = !!api.enableMock.call(null, api)
     } else {
       _api.enableMock = !!api.enableMock
     }
 
-    if (isUndefined(api.mockData)) {
-      _api.mockData = defaultConfig.mockData
-    } else if (isFunction(api.mockData)) {
+    if (isFunction(api.mockData)) {
       _api.mockData = api.mockData.call(null, api)
     } else {
       _api.mockData = api.mockData
     }
 
     if (isUndefined(api.enableRetry)) {
-      _api.enableRetry = this.enableRetry
+      _api.enableRetry = defaultOptions.enableRetry
     } else if (isFunction(api.enableRetry)) {
       _api.enableRetry = !!api.enableRetry.call(null, api)
     } else {
@@ -343,24 +313,24 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.retryTimes)) {
-      _api.retryTimes = this.retryTimes
+      _api.retryTimes = defaultOptions.retryTimes
     } else if (isNumber(api.retryTimes)) {
       _api.retryTimes = api.retryTimes
     } else if (isFunction(api.retryTimes)) {
       _api.retryTimes = api.retryTimes.call(null, api)
     } else {
-      _api.retryTimes = this.retryTimes
+      _api.retryTimes = defaultOptions.retryTimes
       warning(false, `retryTimes 期望 number/function 类型，实际类型为${typeof api.retryTimes}，自动使用默认值`)
     }
 
     if (isUndefined(api.timeout)) {
-      _api.timeout = this.timeout
+      _api.timeout = defaultOptions.timeout
     } else {
       _api.timeout = api.timeout
     }
 
     if (isUndefined(api.enableLog)) {
-      _api.enableLog = this.enableLog
+      _api.enableLog = defaultOptions.enableLog
     } else if (isFunction(api.enableLog)) {
       _api.enableLog = !!api.enableLog.call(null, api)
     } else {
@@ -368,40 +338,41 @@ export class ApiSharp {
     }
 
     if (isUndefined(api.logFormatter)) {
-      _api.logFormatter = this.logFormatter
+      _api.logFormatter = defaultOptions.logFormatter
     } else if (isObject(api.logFormatter)) {
       _api.logFormatter = {
-        logRequest: api.logFormatter.logRequest || this.logFormatter.logRequest,
-        logResponse: api.logFormatter.logResponse || this.logFormatter.logResponse,
-        logResponseError: api.logFormatter.logResponseError || this.logFormatter.logResponseError,
-        logResponseCache: api.logFormatter.logResponseCache || this.logFormatter.logResponseCache
+        logRequest: api.logFormatter.logRequest || defaultOptions.logFormatter.logRequest,
+        logResponse: api.logFormatter.logResponse || defaultOptions.logFormatter.logResponse,
+        logResponseError: api.logFormatter.logResponseError || defaultOptions.logFormatter.logResponseError,
+        logResponseCache: api.logFormatter.logResponseCache || defaultOptions.logFormatter.logResponseCache
       }
     } else {
-      _api.logFormatter = this.logFormatter
+      _api.logFormatter = defaultOptions.logFormatter
     }
 
     /**
      * 参数转换 + 类型校验
      */
-    let _params = isUndefined(api.params) ? defaultConfig.params : api.params
-    let _paramsTransformer
-    if (isUndefined(api.paramsTransformer)) {
-      _paramsTransformer = this.paramsTransformer
-    } else if (isFunction(api.paramsTransformer)) {
-      _paramsTransformer = api.paramsTransformer
+    let _params = isUndefined(api.params) ? {} : api.params
+    let _transformRequest
+    if (isUndefined(api.transformRequest)) {
+      _transformRequest = defaultOptions.transformRequest
+    } else if (isFunction(api.transformRequest)) {
+      _transformRequest = api.transformRequest
     } else {
-      _paramsTransformer = this.paramsTransformer
-      warning(false, `paramsTransformer 期望一个函数，实际接收到${typeof api.paramsTransformer}`)
+      _transformRequest = defaultOptions.transformRequest
+      warning(false, `transformRequest 期望一个函数，实际接收到${typeof api.transformRequest}`)
     }
-    _params = _paramsTransformer.call(null, _params)
+    _params = _transformRequest.call(null, _params)
+
     if (!isUndefined(api.paramsType)) {
       const componentName = _api.baseURL + _api.url
       PropTypes.checkPropTypes(api.paramsType, _params, "", componentName)
     }
-    _api.params = _params
+    _api.params = _params!
 
-    if (isUndefined(api.returnsTransformer)) {
-      _api.returnsTransformer = this.returnsTransformer
+    if (isUndefined(api.transformResponse)) {
+      _api.transformResponse = defaultOptions.transformResponse
     }
 
     return _api
