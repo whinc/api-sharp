@@ -1,4 +1,16 @@
-import { HttpHeader, HttpMethod } from "../types"
+export type HttpMethod = "get" | "GET" | "post" | "POST"
+// | 'delete'
+// | 'DELETE'
+// | 'head'
+// | 'HEAD'
+// | 'options'
+// | 'OPTIONS'
+// | 'put'
+// | 'PUT'
+// | 'patch'
+// | 'PATCH'
+
+export type HttpHeader = { [key: string]: string }
 
 export interface IRequest {
   baseURL: string
@@ -8,10 +20,6 @@ export interface IRequest {
   body: Object
   headers: HttpHeader
   timeout: number
-}
-
-export interface IHttpClient {
-  request<T>(options: IRequest): Promise<IResponse<T>>
 }
 
 export interface IResponse<T> {
@@ -32,4 +40,8 @@ export interface IResponse<T> {
    * HTTP 响应头部
    */
   headers: HttpHeader
+}
+
+export default interface IHttpClient {
+  request<T>(options: IRequest): Promise<IResponse<T>>
 }

@@ -1,14 +1,20 @@
 import { formatFullUrl, formatResponseHeaders, isPlainObject } from "../utils"
-import { IHttpClient, IRequest, IResponse } from "./IHttpClient"
+import IHttpClient, {IResponse, IRequest} from "./IHttpClient"
+
+export interface WebXhrRequest extends IRequest {
+  withCredentials?: boolean
+}
 
 export default class WebXhrClient implements IHttpClient {
-  request<T>(options: IRequest): Promise<IResponse<T>> {
+  request<T>(options: WebXhrRequest): Promise<IResponse<T>> {
     return new Promise((resolve, reject) => {
+      // 暂存返回数据
+      let _response: IResponse<T>
       const xhr = new XMLHttpRequest()
       const fullUrl = formatFullUrl(options.baseURL, options.url, options.query)
 
-      // 暂存返回数据
-      let _response: IResponse<T>
+      // 跨域请求带凭证
+      xhr.withCredentials = options.withCredentials || false
 
       /** 请求超时处理 */
       xhr.timeout = options.timeout
@@ -42,7 +48,6 @@ export default class WebXhrClient implements IHttpClient {
       }
       // 设置响应数据类型（只支持 JSON）
       xhr.responseType = "text"
-      xhr.send(body)
       xhr.onreadystatechange = function() {
         if (this.readyState === XMLHttpRequest.DONE) {
           const headers = formatResponseHeaders(this.getAllResponseHeaders())
@@ -64,6 +69,7 @@ export default class WebXhrClient implements IHttpClient {
           _response = response
         }
       }
+      xhr.send(body)
     })
   }
 }

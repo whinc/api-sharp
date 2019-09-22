@@ -30,7 +30,8 @@ api-sharp 是一个声明式、可扩展、跨平台的 JavaScript 网络请求�
   - 失败重试
   - 自定义日志
   - ...
-- 包含 TS 类型定义
+- 跨平台（浏览器、小程序、React Native、Node.js）（建设中）
+- 支持 typescript
 
 ## 安装
 
@@ -142,95 +143,149 @@ class ApiSharp {
 **ApiDescriptor** 的 TS 定义：
 
 ```typescript
-export interface ApiDescriptor {
+export type ApiDescriptor = CommonApiDescriptor & WebXhrApiDescriptor
+
+interface CommonApiDescriptor {
   /**
-   * 请求的 HTTP 地址，支持相对地址和绝对地址
-   * 如果是相对地址时，以 baseURL 作为基地址，计算最终地址
-   * 如果是绝对地址，则忽略 baseURL，以该地址作为最终地址
+   * 请求地址
+   * 
+   * 支持相对地址（如`"/a/b/c"`）和绝对地址（如`"http://xyz.com/a/b/c"`）
    */
   url: string
   /**
    * 基地址
+   * 
+   * 默认`""`
+   * 
+   * 例如：`'http://xyz.com'`, `'http://xyz.com/a/b'`
    */
   baseURL?: string
   /**
-   * HTTP 请求方法，默认为 GET 方法
+   * HTTP 请求方法
+   * 
+   * 支持 `"GET" | "POST"`
+   * 
+   * 默认`"GET"`
    */
   method?: HttpMethod
   /**
    * HTTP 请求头
+   * 
+   * 默认`{}`
+   * 
+   * 例如：`{"Content-Type": "application/json"}`
    */
   headers?: HttpHeader
   /**
    * 接口描述
+   * 
+   * 默认`""`
    */
   description?: string | ReturnTypeFn<string>
   /**
    * 请求参数
-   * GET 请求时，对象的键值对编码后作为 URL 后的查询字符串
-   * POST 请求时，对象转换为 JSON 格式后作为 HTTP 的 body
+   * 
+   * 最终发送给服务器的数据是 string 类型，数据转换规则如下：
+   * - 对于 GET 请求，数据转换成 query string（encodeURIComponent(k)=encodeURIComponent(v)&encodeURIComponent(k)=encodeURIComponent(v)...）
+   * - 对于 POST 请求，会对数据进行 JSON 序列化
+   * 
+   * 例如：`{id: 100}`
    */
   params?: Params
   /**
    * 请求参数类型
-   * 对请求参数 params 进行类型校验并打印警告，仅在 process.env.NODE_ENV !== 'production' 时生效，生产环境不会增加额外的包体积大小
+   * 
+   * 支持 PropType 类型，类型不符时控制台输出错误提示（但不影响接口继续请求），仅在`process.env.NODE_ENV !== 'production'`时有效，生产环境不会引入 prop-types 包
+   * 
+   * 例如：`{ id: PropTypes.number.isRequired }`
    */
   paramsType?: ParamsType
   /**
-   * 请求参数转换函数
+   * 转换请求参数
+   * 
    * 用户发起调用 -> params(原始参数) -> transformRequest(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
+   * 
+   * 例如：`(params) => ({...params, name: 'abc'})`
    */
   transformRequest?: Transformer<Params>
   /**
-   * 返回数据转换函数
-   * 接收 HTTP 响应 -> returns(返回数据) -> transformResponse(数据转换) -> 用户接收结果
+   * 转换响应数据
+   * 
+   * 接收 HTTP 响应 -> data(返回数据) -> transformResponse(数据转换) -> 用户接收结果
+   * 
+   * 例如：`(data) => ({...data, errMsg: 'errCode: ' + data.errCode})`
+   *
    */
   transformResponse?: Transformer<any>
   /**
-   * 开启缓存，默认关闭
-   * 并发请求相同接口且参数相同时，实际只会发出一个请求，因为缓存的是请求的 Promise。
+   * 开启缓存
+   * 
+   * 并发请求相同接口且参数相同时，实际只会发出一个请求，因为缓存的是请求的 Promise
+   * 
+   * 默认`false`
    */
   enableCache?: boolean | ReturnTypeFn<boolean>
   /**
-   * 缓存持续时间(单位毫秒)，默认 5 分钟
+   * 缓存持续时间，单位毫秒
+   * 
    * 下次取缓存时，如果缓存已存在的的时间超过该值，则对应缓存失效
+   * 
+   * 默认 `5*60*1000`ms 
    */
   cacheTime?: number | ReturnTypeFn<number>
   /**
-   * 开启数据模拟，默认关闭
+   * 开启接口数据模拟
+   * 
+   * 默认`false`
    */
   enableMock?: boolean | ReturnTypeFn<boolean>
   /**
-   * 模拟接口返回的数据，默认 undefined
+   * 模拟的接口数据
+   * 
+   * 默认`undefined`
+   * 
+   * 例如：`{id: 1, name: 'jim'}`
    */
   mockData?: any | ReturnTypeFn<any>
   /**
-   * 开启失败重试，默认关闭
+   * 开启失败重试
+   * 
+   * 默认`false`
    */
   enableRetry?: boolean | ReturnTypeFn<boolean>
   /**
-   * 重试最大次数，默认 1 次
+   * 重试最大次数
+   * 
+   * 默认`1`
    */
   retryTimes?: number | ReturnTypeFn<number>
   /**
-   * 接口超时时间，单位毫秒，默认 60*1000 ms
+   * 接口超时时间，单位毫秒
+   * 
    * 从发出请求起，如果 timeout 毫秒后接口未返回，接口调用失败。
+   * 
+   * 默认`60*1000`ms
    */
   timeout?: number
   /**
-   * 开启打印日志，默认为 process.env.NODE_ENV !== "production"
+   * 开启控制台日志
+   * 
+   * 默认为`process.env.NODE_ENV !== "production"`
    */
   enableLog?: boolean | ReturnTypeFn<boolean>
   /**
-   * 日志格式化
+   * 格式化日志
    */
   logFormatter?: LogFormatter
+}
 
+interface WebXhrApiDescriptor {
   /**
-   * 其他用户自定义信息
-   * 这些信息会被保留下来
+   * 跨域请求时是否带上用户信息（如Cookie和认证的HTTP头）
+   * 
+   * 默认`false`
    */
-  [name: string]: any
+  withCredentials?: boolean
 }
 ```
 

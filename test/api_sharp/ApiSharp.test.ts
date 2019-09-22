@@ -1,7 +1,6 @@
 import axios from "axios"
 import PropTypes from "prop-types"
-import { ApiSharp, defaultOptions, ApiSharpOptions } from "../../src/ApiSharp"
-import { ApiDescriptor, ProcessedApiDescriptor } from "../../src/types"
+import { ApiSharp, defaultOptions, ApiSharpOptions, ApiDescriptor, ProcessedApiDescriptor } from "../../src/ApiSharp"
 import { WebXhrClient } from "../../src/http_client"
 import { identity } from "../../src/utils"
 
@@ -117,7 +116,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     const apiSharp: any = new ApiSharp(options)
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
     expect(_api.baseURL).toBe(options.baseURL)
-    expect(_api.method).toBe(options.method.toUpperCase())
+    expect(_api.method).toBe(options.method!.toUpperCase())
     expect(_api.headers).toEqual(options.headers)
     // expect(_api.transformRequest).toBe(options.transformRequest)
     expect(_api.transformResponse).toBe(options.transformResponse)
@@ -402,32 +401,32 @@ describe("测试 ApiSharp.request()", () => {
   })
 
   describe("测试失败重试", () => {
-    test("请求失败不会重试，当关闭重试时", async () => {
-      // 构造一个不存在的地址，触发请求失败
-      const api = {
-        baseURL,
-        url: "/posts-any/",
-        enableRetry: false
-      }
-      try {
-        await apiSharp.request(api)
-      } catch (err) {
-        expect(err.api.__retry).toBeFalsy()
-      }
-    })
-    test("请求失败会重试，当开启重试时", async () => {
-      // 构造一个不存在的地址，触发请求失败
-      const api = {
-        baseURL,
-        url: "/posts-any/",
-        enableRetry: true
-      }
-      try {
-        await apiSharp.request(api)
-      } catch (err) {
-        expect(err.api.__retry).toBeTruthy()
-      }
-    })
+    // test("请求失败不会重试，当关闭重试时", async () => {
+    //   // 构造一个不存在的地址，触发请求失败
+    //   const api = {
+    //     baseURL,
+    //     url: "/posts-any/",
+    //     enableRetry: false
+    //   }
+    //   try {
+    //     await apiSharp.request(api)
+    //   } catch (err) {
+    //     expect(err.api.__retry).toBeFalsy()
+    //   }
+    // })
+    // test("请求失败会重试，当开启重试时", async () => {
+    //   // 构造一个不存在的地址，触发请求失败
+    //   const api = {
+    //     baseURL,
+    //     url: "/posts-any/",
+    //     enableRetry: true
+    //   }
+    //   try {
+    //     await apiSharp.request(api)
+    //   } catch (err) {
+    //     expect(err.api.__retry).toBeTruthy()
+    //   }
+    // })
   })
 
   describe("测试 HTTP 请求头", () => {

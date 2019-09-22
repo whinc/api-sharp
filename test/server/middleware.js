@@ -5,7 +5,6 @@ module.exports = (req, res, next) => {
   } else if (req.url === "/date/text") {
     res.end(`server_date:` + Date.now())
     return
-  }
-
+  } 
   next()
 }

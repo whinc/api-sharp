@@ -1,22 +1,212 @@
-import {
-  ApiDescriptor,
-  HttpMethod,
-  ProcessedApiDescriptor,
-  ApiResponse,
-  ReturnTypeFn,
-} from "./types"
 import invariant from "tiny-invariant"
 import warning from "tiny-warning"
 import PropTypes from "prop-types"
+import {Validator} from 'prop-types'
 import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity } from "./utils"
 import { ICache, ExpireCache } from "./cache"
-import { IHttpClient, IResponse, WebXhrClient } from "./http_client"
+import {  WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader } from "./http_client"
 
-type optionKeys = 'baseURL' | 'method' | 'headers' | 'enableMock' | 'enableCache' | 'cacheTime' | 'transformRequest' | 'transformResponse' | 'enableRetry' | 'retryTimes' | 'timeout' | 'enableLog' | 'logFormatter'
+export interface ApiResponse<T> extends IResponse<T> {
+  /**
+   * 请求接口描述符
+   */
+  api: ProcessedApiDescriptor
+  /**
+   * 响应数据的来源
+   */
+  from: "cache" | "network" | "mock"
+}
+
+export type ReturnTypeFn<T> = (api: ApiDescriptor) => T
+export type Params = Object
+export type ParamsType = { [key in keyof Params]: Validator<any> }
+export type Transformer<T> = (value: T) => T
+
+export type ApiDescriptor = CommonApiDescriptor & WebXhrApiDescriptor
+
+interface CommonApiDescriptor {
+  /**
+   * 请求地址
+   * 
+   * 支持相对地址（如`"/a/b/c"`）和绝对地址（如`"http://xyz.com/a/b/c"`）
+   */
+  url: string
+  /**
+   * 基地址
+   * 
+   * 默认`""`
+   * 
+   * 例如：`'http://xyz.com'`, `'http://xyz.com/a/b'`
+   */
+  baseURL?: string
+  /**
+   * HTTP 请求方法
+   * 
+   * 支持 `"GET" | "POST"`
+   * 
+   * 默认`"GET"`
+   */
+  method?: HttpMethod
+  /**
+   * HTTP 请求头
+   * 
+   * 默认`{}`
+   * 
+   * 例如：`{"Content-Type": "application/json"}`
+   */
+  headers?: HttpHeader
+  /**
+   * 接口描述
+   * 
+   * 默认`""`
+   */
+  description?: string | ReturnTypeFn<string>
+  /**
+   * 请求参数
+   * 
+   * 最终发送给服务器的数据是 string 类型，数据转换规则如下：
+   * - 对于 GET 请求，数据转换成 query string（encodeURIComponent(k)=encodeURIComponent(v)&encodeURIComponent(k)=encodeURIComponent(v)...）
+   * - 对于 POST 请求，会对数据进行 JSON 序列化
+   * 
+   * 例如：`{id: 100}`
+   */
+  params?: Params
+  /**
+   * 请求参数类型
+   * 
+   * 支持 PropType 类型，类型不符时控制台输出错误提示（但不影响接口继续请求），仅在`process.env.NODE_ENV !== 'production'`时有效，生产环境不会引入 prop-types 包
+   * 
+   * 例如：`{ id: PropTypes.number.isRequired }`
+   */
+  paramsType?: ParamsType
+  /**
+   * 转换请求参数
+   * 
+   * 用户发起调用 -> params(原始参数) -> transformRequest(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
+   * 
+   * 例如：`(params) => ({...params, name: 'abc'})`
+   */
+  transformRequest?: Transformer<Params>
+  /**
+   * 转换响应数据
+   * 
+   * 接收 HTTP 响应 -> data(返回数据) -> transformResponse(数据转换) -> 用户接收结果
+   * 
+   * 例如：`(data) => ({...data, errMsg: 'errCode: ' + data.errCode})`
+   *
+   */
+  transformResponse?: Transformer<any>
+  /**
+   * 开启缓存
+   * 
+   * 并发请求相同接口且参数相同时，实际只会发出一个请求，因为缓存的是请求的 Promise
+   * 
+   * 默认`false`
+   */
+  enableCache?: boolean | ReturnTypeFn<boolean>
+  /**
+   * 缓存持续时间，单位毫秒
+   * 
+   * 下次取缓存时，如果缓存已存在的的时间超过该值，则对应缓存失效
+   * 
+   * 默认 `5*60*1000`ms 
+   */
+  cacheTime?: number | ReturnTypeFn<number>
+  /**
+   * 开启接口数据模拟
+   * 
+   * 默认`false`
+   */
+  enableMock?: boolean | ReturnTypeFn<boolean>
+  /**
+   * 模拟的接口数据
+   * 
+   * 默认`undefined`
+   * 
+   * 例如：`{id: 1, name: 'jim'}`
+   */
+  mockData?: any | ReturnTypeFn<any>
+  /**
+   * 开启失败重试
+   * 
+   * 默认`false`
+   */
+  enableRetry?: boolean | ReturnTypeFn<boolean>
+  /**
+   * 重试最大次数
+   * 
+   * 默认`1`
+   */
+  retryTimes?: number | ReturnTypeFn<number>
+  /**
+   * 接口超时时间，单位毫秒
+   * 
+   * 从发出请求起，如果 timeout 毫秒后接口未返回，接口调用失败。
+   * 
+   * 默认`60*1000`ms
+   */
+  timeout?: number
+  /**
+   * 开启控制台日志
+   * 
+   * 默认为`process.env.NODE_ENV !== "production"`
+   */
+  enableLog?: boolean | ReturnTypeFn<boolean>
+  /**
+   * 格式化日志
+   */
+  logFormatter?: LogFormatter
+}
+
+interface WebXhrApiDescriptor {
+  /**
+   * 跨域请求时是否带上用户信息（如Cookie和认证的HTTP头）
+   * 
+   * 默认`false`
+   */
+  withCredentials?: boolean
+}
+
+export interface ProcessedApiDescriptor {
+  url: string
+  baseURL: string
+  method: HttpMethod
+  headers: HttpHeader
+  description: string
+  params: Params
+  paramTypes: ParamsType
+  transformResponse: Transformer<any>
+  enableCache: boolean
+  cacheTime: number
+  enableMock: boolean
+  mockData: any
+  enableRetry: boolean
+  retryTimes: number
+  timeout: number
+  enableLog: boolean
+  logFormatter: LogFormatter
+  withCredentials: boolean
+}
+
+export interface LogFormatter {
+  /**
+   * 记录 HTTP 发出最近的数据
+   */
+  logRequest(api: ProcessedApiDescriptor): void
+  /**
+   * 记录 HTTP 响应后最近的数据
+   */
+  logResponse(api: ProcessedApiDescriptor, data?: any): void
+  logResponseError(error: Error, api: ProcessedApiDescriptor, data?: any): void
+  logResponseCache(api: ProcessedApiDescriptor, data?: any): void
+}
+
+
+
 /**
  * 全局配置项
  */
-export interface ApiSharpOptions extends Pick<ApiDescriptor, optionKeys> {
+export interface ApiSharpOptions extends Omit<ApiDescriptor, 'url' | 'description' | 'params' | 'paramsType'> {
   httpClient?: IHttpClient
   cache?: ICache<Promise<IResponse<any>>>
 }
@@ -34,9 +224,11 @@ type RemoveReturnFn<T> = {
 export const defaultOptions: Required<Omit<RemoveReturnFn<ApiSharpOptions>, 'transformRequest' | 'transformResponse'> & Pick<ApiSharpOptions, 'transformRequest' | 'transformResponse'>> = {
   httpClient: new WebXhrClient(),
   cache: new ExpireCache<Promise<IResponse<any>>>(),
+  withCredentials: false,
   baseURL: "",
   headers: {},
   enableMock: false,
+  mockData: undefined,
   method: "GET",
   enableCache: false,
   cacheTime: 5 * 1000,
@@ -109,7 +301,7 @@ export class ApiSharp {
    * @param api - 接口描述符
    * @return 响应数据
    */
-  async request<T>(_api: ApiDescriptor | string): Promise<ApiResponse<T>> {
+  async request<T = any>(_api: ApiDescriptor | string): Promise<ApiResponse<T>> {
     const api = this.processApi(_api)
 
     this.logRequest(api)
@@ -151,7 +343,7 @@ export class ApiSharp {
         this.cache.delete(cachedKey)
       }
       if (api.enableRetry && api.retryTimes >= 1) {
-        return this.request({ ...api, retryTimes: api.retryTimes - 1, __retry: true })
+        return this.request({ ...api, retryTimes: api.retryTimes - 1})
       } else {
         this.logResponseError(err, api)
         throw new ApiSharpRequestError(err.message, api)
@@ -165,7 +357,7 @@ export class ApiSharp {
         this.cache.delete(cachedKey)
       }
       if (api.enableRetry && api.retryTimes >= 1) {
-        return this.request({ ...api, retryTimes: api.retryTimes - 1, __retry: true })
+        return this.request({ ...api, retryTimes: api.retryTimes - 1})
       } else {
         this.logResponseError(new Error(checkResult.errMsg), api, res.data)
         throw new ApiSharpRequestError(checkResult.errMsg, api)
@@ -373,6 +565,12 @@ export class ApiSharp {
 
     if (isUndefined(api.transformResponse)) {
       _api.transformResponse = defaultOptions.transformResponse
+    }
+
+    if (isUndefined(api.withCredentials)) {
+      _api.withCredentials = defaultOptions.withCredentials
+    } else {
+      _api.withCredentials = !!api.withCredentials
     }
 
     return _api

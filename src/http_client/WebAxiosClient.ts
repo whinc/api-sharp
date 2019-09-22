@@ -1,5 +1,5 @@
-import { IHttpClient, IRequest, IResponse } from "./IHttpClient"
 import axios from "axios"
+import IHttpClient, { IRequest, IResponse } from './IHttpClient'
 
 export default class WebAxiosClient implements IHttpClient {
   async request<T>(options: IRequest): Promise<IResponse<T>> {
