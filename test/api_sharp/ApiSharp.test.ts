@@ -575,6 +575,21 @@ describe("测试 ApiSharp.request()", () => {
         expect(err).toBeInstanceOf(Error)
       }
     })
+    test("timeout 为 0 时，接口请求不会超时，不抛出异常", async () => {
+      const newPost = mockOnePost()
+      expect.assertions(0)
+      try {
+        await apiSharp.request({
+          baseURL,
+          url: "/posts",
+          method: "POST",
+          params: newPost,
+          timeout: 0
+        })
+      } catch (err) {
+        expect(err).toBeInstanceOf(Error)
+      }
+    })
     test("接口请求超时，抛出异常", async () => {
       const newPost = mockOnePost()
       expect.assertions(1)

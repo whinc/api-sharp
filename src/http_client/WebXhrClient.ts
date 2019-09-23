@@ -1,4 +1,4 @@
-import { formatFullUrl, formatResponseHeaders, isPlainObject } from "../utils"
+import { formatResponseHeaders, isPlainObject } from "../utils"
 import IHttpClient, {IResponse, IRequest} from "./IHttpClient"
 
 export interface WebXhrRequest extends IRequest {
@@ -7,20 +7,13 @@ export interface WebXhrRequest extends IRequest {
 
 export default class WebXhrClient implements IHttpClient {
   request<T>(options: WebXhrRequest): Promise<IResponse<T>> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       // 暂存返回数据
       let _response: IResponse<T>
       const xhr = new XMLHttpRequest()
-      const fullUrl = formatFullUrl(options.baseURL, options.url, options.query)
 
       // 跨域请求带凭证
       xhr.withCredentials = options.withCredentials || false
-
-      /** 请求超时处理 */
-      xhr.timeout = options.timeout
-      xhr.ontimeout = function () {
-        reject(new Error(`请求超时(${options.timeout})`))
-      }
 
       /**
        * 事件触发顺序：readystatechange -> timeout -> loadend
@@ -32,7 +25,7 @@ export default class WebXhrClient implements IHttpClient {
         resolve(_response)
       }
 
-      xhr.open(options.method, fullUrl, true)
+      xhr.open(options.method, options.url, true)
       // 设置请求头
       Object.keys(options.headers).forEach(key => xhr.setRequestHeader(key, options.headers[key]))
 

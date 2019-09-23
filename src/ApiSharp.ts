@@ -5,6 +5,7 @@ import {Validator} from 'prop-types'
 import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity } from "./utils"
 import { ICache, ExpireCache } from "./cache"
 import {  WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader } from "./http_client"
+import { formatFullUrl } from "./utils"
 
 export interface ApiResponse<T> extends IResponse<T> {
   /**
@@ -236,7 +237,7 @@ export const defaultOptions: Required<Omit<RemoveReturnFn<ApiSharpOptions>, 'tra
   transformResponse: identity,
   enableRetry: false,
   retryTimes: 1,
-  timeout: 60 * 1000,
+  timeout: 0,
   enableLog:  process.env.NODE_ENV !== "production",
   logFormatter: {
     logRequest: (api: ProcessedApiDescriptor) => {
@@ -285,6 +286,9 @@ export const defaultOptions: Required<Omit<RemoveReturnFn<ApiSharpOptions>, 'tra
   }
 }
 
+// 永不 resolve 或 reject 的 Promise
+const nerverPromise = new Promise(() => {})
+
 export class ApiSharp {
   private readonly options: ApiSharpOptions
   private readonly httpClient: IHttpClient
@@ -315,6 +319,15 @@ export class ApiSharp {
     let cachedKey
     let hitCache = false
 
+    // 构造一个超时时自动 reject 的 Promise
+    let timeoutPromise: Promise<IResponse<T>> = nerverPromise as Promise<IResponse<T>>
+    if (api.timeout > 0) {
+      timeoutPromise = new Promise((_resolve, reject) => {
+        const error = new Error(`请求超时(${api.timeout}ms)`)
+        setTimeout(() => reject(error), api.timeout)
+      })
+    }
+
     // 处理缓存
     if (api.enableCache) {
       cachedKey = this.generateCachedKey(api)
@@ -334,7 +347,7 @@ export class ApiSharp {
 
     try {
       // 发起请求
-      res = await requestPromise
+      res = await Promise.race([requestPromise, timeoutPromise])
     } catch (err) {
       // 请求失败或超时，都会抛出异常并被捕获处理
 
@@ -388,14 +401,12 @@ export class ApiSharp {
   }
 
   private sendRequest<T>(api: ProcessedApiDescriptor): Promise<IResponse<T>> {
+    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === 'GET' ? api.params : {})
     return this.httpClient.request<T>({
-      baseURL: api.baseURL,
-      url: api.url,
+      url: fullUrl,
       method: api.method,
       headers: api.headers,
-      timeout: api.timeout,
-      query: api.method === "GET" ? api.params : {},
-      body: api.method === "POST" ? api.params : {}
+      body: api.method === "POST" ? api.params : null
     })
   }
 
@@ -515,10 +526,12 @@ export class ApiSharp {
       warning(false, `retryTimes 期望 number/function 类型，实际类型为${typeof api.retryTimes}，自动使用默认值`)
     }
 
-    if (isUndefined(api.timeout)) {
-      _api.timeout = defaultOptions.timeout
+    // timeout
+    if (isNumber(api.timeout)) {
+      // 超时时间必须是一个非负整数
+      _api.timeout = Math.ceil(Math.max(api.timeout, 0))
     } else {
-      _api.timeout = api.timeout
+      _api.timeout = defaultOptions.timeout
     }
 
     if (isUndefined(api.enableLog)) {
@@ -529,6 +542,7 @@ export class ApiSharp {
       _api.enableLog = !!api.enableLog
     }
 
+    // logFormatter
     if (isUndefined(api.logFormatter)) {
       _api.logFormatter = defaultOptions.logFormatter
     } else if (isObject(api.logFormatter)) {
@@ -542,9 +556,7 @@ export class ApiSharp {
       _api.logFormatter = defaultOptions.logFormatter
     }
 
-    /**
-     * 参数转换 + 类型校验
-     */
+    // transformRequest
     let _params = isUndefined(api.params) ? {} : api.params
     let _transformRequest
     if (isUndefined(api.transformRequest)) {
@@ -557,16 +569,19 @@ export class ApiSharp {
     }
     _params = _transformRequest.call(null, _params)
 
+    // paramsType
     if (!isUndefined(api.paramsType)) {
       const componentName = _api.baseURL + _api.url
       PropTypes.checkPropTypes(api.paramsType, _params, "", componentName)
     }
     _api.params = _params!
 
+    // transformResponse
     if (isUndefined(api.transformResponse)) {
       _api.transformResponse = defaultOptions.transformResponse
     }
 
+    // withCredentials
     if (isUndefined(api.withCredentials)) {
       _api.withCredentials = defaultOptions.withCredentials
     } else {

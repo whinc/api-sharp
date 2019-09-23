@@ -1,4 +1,4 @@
-import { HttpHeader } from "./types"
+import { HttpHeader } from 'http_client/IHttpClient'
 
 export function isString(v: any): v is string {
   return typeof v === "string"
