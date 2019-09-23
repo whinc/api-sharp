@@ -16,7 +16,7 @@
 
 - 浏览器使用 [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest) 请求
 - node.js 使用 [http](https://nodejs.org/api/http.html) 模块请求（TODO）
-- 支持自定义请求实现（可扩展支持 React Native、小程序等环境）
+- 支持自定义请求实现（可扩展支持更多环境，如 React Native、小程序等环境）
 - 支持 [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) 接口
 - 完善的 [TypeScript](http://www.typescriptlang.org/docs/home.html) 类型
 - 转换请求和响应数据
