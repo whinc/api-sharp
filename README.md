@@ -1,44 +1,47 @@
 <h1 align="center">Api Sharp</h1>
 
 <div align="center">
-api-sharp 是一个声明式、可扩展、跨平台的 JavaScript 网络请求库。
-
 <p>
 
 [![npm](https://img.shields.io/npm/v/api-sharp)](https://www.npmjs.com/package/api-sharp) ![](https://img.shields.io/bundlephobia/minzip/api-sharp) ![](https://img.shields.io/npm/dt/api-sharp) [![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)](https://circleci.com/dashboard)
+</p>
 
+<p>
+基于 Promise 的跨平台的 HTTP 客户端。
 </p>
 
 </div>
 
 ## 特性
 
-- 简单
-- 声明式
-- 配置丰富
-  - 请求基地址
-  - 请求地址
-  - 请求方法
-  - 请求 HTTP 头
-  - 接口描述
-  - 超时设置
-  - 请求参数校验
-  - 请求参数转换
-  - 响应数据转换
-  - 缓存
-  - 数据 mock
-  - 失败重试
-  - 自定义日志
-  - ...
-- 跨平台（浏览器、小程序、React Native、Node.js）（建设中）
-- 支持 typescript
+- 浏览器使用 [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest) 请求
+- node.js 使用 [http](https://nodejs.org/api/http.html) 模块请求（TODO）
+- 支持自定义请求实现（可扩展支持 React Native、小程序等环境）
+- 支持 [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) 接口
+- 完善的 [TypeScript](http://www.typescriptlang.org/docs/home.html) 类型
+- 转换请求和响应数据
+- 自动解析 JSON 数据
+- 设置请求超时
+- 请求数据类型运行时校验（基于[prop-types](https://github.com/facebook/prop-types)，仅开发环境检查，不影响 production 构建包的大小和性能）
+- 缓存接口数据
+- 模拟接口数据
+- 失败自动重试
+- 自定义日志
+
+![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
+--- | --- | --- | --- | --- | --- |
+Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 11 ✔ |
 
 ## 安装
 
-通过 npm 安装（或者 yarn）
-
+使用 npm 安装
 ```bash
 $ npm install api-sharp
+```
+
+使用 yarn 安装
+```bash
+$ yarn add api-sharp
 ```
 
 ## 示例
@@ -53,13 +56,19 @@ const apiSharp = new ApiSharp({...})
 ```
 
 发送 GET 请求
-
 ```js
+// 请求服务器时间
+apiSharp.request({ url: "/json/server_date" }).then(response => {
+  console.log(response)
+}, err => {
+  console.error(response)
+})
+
+// 使用 async/await
 const response = await apiSharp.request({ url: "/json/server_date" })
 ```
 
 发送 POST 请求
-
 ```js
 const response = await apiSharp.request({
   url: "/json/server_date",
@@ -128,20 +137,17 @@ const response = await apiSharp.request({
 
 [![Edit api-sharp demo](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/api-sharp-demo-rw1n3?expanddevtools=1&fontsize=14&module=%2Fsrc%2Findex.js)
 
-## 文档
+## api-sharp API
 
-### API
-
+`ApiSharp`实例方法
 ```typescript
 class ApiSharp {
-  // 请求数据
   request(url: string): Promise<IResponse>
   request(api: ApiDescriptor): Promise<IResponse>
 }
 ```
 
-**ApiDescriptor** 的 TS 定义：
-
+请求方法支持的接口配置项
 ```typescript
 export type ApiDescriptor = CommonApiDescriptor & WebXhrApiDescriptor
 
@@ -289,8 +295,7 @@ interface WebXhrApiDescriptor {
 }
 ```
 
-**IResponse** 的 TS 定义：
-
+请求返回的数据结构
 ```typescript
 export interface IResponse<T = any> {
   // HTTP 响应状态码
@@ -311,16 +316,6 @@ export interface IResponse<T = any> {
 ## 更新日志
 
 [CHANGELOG](./CHANGELOG.md)
-
-## 架构
-
-api-sharp 主要针对 Web 浏览器，不过它被设计成平台无关的，通过适配器可以很方便的支持新平台。下面是它的架构图，对上层提供配置项以支持声明式、可扩展的行为，对下层提供适配器以适应不同平台，内部专注于负责实现那些可跨平台通用的额的网络请求逻辑，如缓存、重试、mock 等。
-
-![](docs/arch.png)
-
-ApiSharp 内部有一个`IHttpClient`的请求接口，通过不同的具体实现完成对各个平台的适配。
-
-![](docs/class.png)
 
 ## 参与共建
 
