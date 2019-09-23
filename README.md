@@ -1,4 +1,4 @@
-<h1 align="center">Api Sharp</h1>
+<h1 align="center">api-sharp</h1>
 
 <div align="center">
 <p>
