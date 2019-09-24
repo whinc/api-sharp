@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/whinc/api-sharp/compare/v1.3.2...v1.4.0) (2019-09-24)
+
+
+### Features
+
+* 浏览器平台支持withCredentials配置 ([2546ae1](https://github.com/whinc/api-sharp/commit/2546ae1))
+
 ## [1.3.2](https://github.com/whinc/api-sharp/compare/v1.3.1...v1.3.2) (2019-09-19)
 
 
