@@ -1,16 +1,45 @@
-import { HttpHeader, HttpMethod } from "../types"
+export type HttpMethod = "get" | "GET" | "post" | "POST"
+// | 'delete'
+// | 'DELETE'
+// | 'head'
+// | 'HEAD'
+// | 'options'
+// | 'OPTIONS'
+// | 'put'
+// | 'PUT'
+// | 'patch'
+// | 'PATCH'
 
+export type HttpHeader = { [key: string]: string }
+
+/**
+ * 请求参数接口
+ * 
+ * 由具体平台实现该接口，尽量保持接口精简，减少针对平台的实现成本
+ */
 export interface IRequest {
-  baseURL: string
+  /**
+   * 接口请求地址，是一个绝对路径
+   * 
+   * 例如：`"http://xyz.com?a=b"`
+   */
   url: string
+  /**
+   * 请求方法
+   */
   method: HttpMethod
-  query: any
-  body: any
+  /**
+   * 请求数据
+   * 
+   * 仅当请求方法为`"POST"`时有效
+   */
+  body: Object | null
+  /**
+   * HTTP 请求头
+   * 
+   * 例如：`{"Content-Type": "application/json"}`
+   */
   headers: HttpHeader
-}
-
-export interface IHttpClient {
-  request<T>(options: IRequest): Promise<IResponse<T>>
 }
 
 export interface IResponse<T> {
@@ -31,4 +60,8 @@ export interface IResponse<T> {
    * HTTP 响应头部
    */
   headers: HttpHeader
+}
+
+export default interface IHttpClient {
+  request<T>(options: IRequest): Promise<IResponse<T>>
 }

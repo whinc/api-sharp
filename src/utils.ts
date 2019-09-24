@@ -1,4 +1,4 @@
-import { HttpHeader } from "./types"
+import { HttpHeader } from 'http_client/IHttpClient'
 
 export function isString(v: any): v is string {
   return typeof v === "string"
@@ -26,13 +26,6 @@ export function isPlainObject(v: any): v is Object {
 
 export function identity<T>(v: T): T {
   return v
-}
-
-export function getDefault(...args) {
-  for (let v of args) {
-    if (!isUndefined(v)) return v
-  }
-  return undefined
 }
 
 export function encodeQuery(query: Object): string {
