@@ -177,8 +177,6 @@ describe("测试 ApiSharp.processApi() 方法", () => {
       [undefined, ""],
       ["", ""],
       ["hello", "hello"],
-      [() => "hello", "hello"],
-      [_api => _api.url, api.url]
     ]
     values.forEach(([received, expected]) => {
       api.description = received
@@ -208,9 +206,6 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     test(`api.mockData 为 ${JSON.stringify(data)}，当设置为 ${JSON.stringify(data)} 后`, () => {
       expect(apiSharp.processApi({ ...api, mockData: data }).mockData).toEqual(data)
     })
-    test(`api.mockData 为 ${JSON.stringify(data)}，当设置为 () => (${JSON.stringify(data)}) 后`, () => {
-      expect(apiSharp.processApi({ ...api, mockData: () => data }).mockData).toEqual(data)
-    })
   })
 
   describe("测试 api.enableRetry 取值", () => {
@@ -220,9 +215,6 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     })
     test("api.enableRetry 为 true，当设置为 true 后", () => {
       expect(apiSharp.processApi({ ...api, enableRetry: true }).enableRetry).toBeTruthy()
-    })
-    test("api.enableRetry 为 true，当设置为 () => true 后", () => {
-      expect(apiSharp.processApi({ ...api, enableRetry: () => true }).enableRetry).toBeTruthy()
     })
   })
 

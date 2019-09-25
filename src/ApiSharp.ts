@@ -1,11 +1,13 @@
-import invariant from "tiny-invariant"
-import warning from "tiny-warning"
 import PropTypes from "prop-types"
 import {Validator} from 'prop-types'
-import { isString, isFunction, getSortedString, isUndefined, isNumber, isObject, identity } from "./utils"
+import { isString, getSortedString, isUndefined, identity, invariant, warning } from "./utils"
 import { ICache, ExpireCache } from "./cache"
 import {  WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader } from "./http_client"
 import { formatFullUrl } from "./utils"
+
+    const removeUndefinedValue = target => {
+      return Object.keys(target).filter(key => target[key] !== undefined).reduce((obj, key) => Object.assign(obj, {[key]: target[key]}), {})
+    }
 
 export interface ApiResponse<T> extends IResponse<T> {
   /**
@@ -61,7 +63,7 @@ interface CommonApiDescriptor {
    * 
    * 默认`""`
    */
-  description?: string | ReturnTypeFn<string>
+  description?: string
   /**
    * 请求参数
    * 
@@ -104,7 +106,7 @@ interface CommonApiDescriptor {
    * 
    * 默认`false`
    */
-  enableCache?: boolean | ReturnTypeFn<boolean>
+  enableCache?: boolean
   /**
    * 缓存持续时间，单位毫秒
    * 
@@ -112,13 +114,13 @@ interface CommonApiDescriptor {
    * 
    * 默认 `5*60*1000`ms 
    */
-  cacheTime?: number | ReturnTypeFn<number>
+  cacheTime?: number
   /**
    * 开启接口数据模拟
    * 
    * 默认`false`
    */
-  enableMock?: boolean | ReturnTypeFn<boolean>
+  enableMock?: boolean
   /**
    * 模拟的接口数据
    * 
@@ -126,19 +128,19 @@ interface CommonApiDescriptor {
    * 
    * 例如：`{id: 1, name: 'jim'}`
    */
-  mockData?: any | ReturnTypeFn<any>
+  mockData?: any
   /**
    * 开启失败重试
    * 
    * 默认`false`
    */
-  enableRetry?: boolean | ReturnTypeFn<boolean>
+  enableRetry?: boolean
   /**
    * 重试最大次数
    * 
    * 默认`1`
    */
-  retryTimes?: number | ReturnTypeFn<number>
+  retryTimes?: number
   /**
    * 接口超时时间，单位毫秒
    * 
@@ -152,7 +154,7 @@ interface CommonApiDescriptor {
    * 
    * 默认为`process.env.NODE_ENV !== "production"`
    */
-  enableLog?: boolean | ReturnTypeFn<boolean>
+  enableLog?: boolean
   /**
    * 格式化日志
    */
@@ -168,27 +170,7 @@ interface WebXhrApiDescriptor {
   withCredentials?: boolean
 }
 
-export interface ProcessedApiDescriptor {
-  url: string
-  baseURL: string
-  method: HttpMethod
-  headers: HttpHeader
-  description: string
-  params: Params
-  paramTypes: ParamsType
-  transformResponse: Transformer<any>
-  enableCache: boolean
-  cacheTime: number
-  enableMock: boolean
-  mockData: any
-  enableRetry: boolean
-  retryTimes: number
-  timeout: number
-  enableLog: boolean
-  logFormatter: LogFormatter
-  withCredentials: boolean
-}
-
+export type ProcessedApiDescriptor = Required<ApiDescriptor>
 export interface LogFormatter {
   /**
    * 记录 HTTP 发出最近的数据
@@ -218,11 +200,7 @@ export class ApiSharpRequestError extends Error {
   }
 }
 
-type RemoveReturnFn<T> = {
-  [K in keyof T]: Exclude<T[K], ReturnTypeFn<any>>
-}
-
-export const defaultOptions: Required<Omit<RemoveReturnFn<ApiSharpOptions>, 'transformRequest' | 'transformResponse'> & Pick<ApiSharpOptions, 'transformRequest' | 'transformResponse'>> = {
+export const defaultOptions: Required<ApiSharpOptions> = {
   httpClient: new WebXhrClient(),
   cache: new ExpireCache<Promise<IResponse<any>>>(),
   withCredentials: false,
@@ -414,179 +392,38 @@ export class ApiSharp {
     return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.params)}`
   }
 
-  private mergeApi (api: ApiDescriptor, options: ApiSharpOptions): ApiDescriptor {
-    return {
-      ...options,
-      ...Object.keys(api).filter(key => api[key] !== undefined).reduce((obj, key) => Object.assign(obj, {[key]: api[key]}), {})
-    } as ApiDescriptor
-  }
-
   private processApi(api: ApiDescriptor | string): ProcessedApiDescriptor {
     invariant(api, "api 为空")
 
     if (isString(api)) {
       api = { url: api }
     }
-    api = this.mergeApi(api, this.options)
 
-    const _api = {...api} as ProcessedApiDescriptor
+    const {httpClient, cache, ..._defaultOptions} = defaultOptions 
+    const _api = {
+      description: '',
+      ..._defaultOptions,
+      ...removeUndefinedValue(this.options),
+      ...removeUndefinedValue(api)
+    } as ProcessedApiDescriptor
 
-    // 请求地址
-    if (!api.url || !String(api.url)) {
-      invariant(false, `url 为空`)
-    } else {
-      _api.url = String(api.url)
-    }
+    invariant(_api.url && isString(_api.url), 'url 为空')
 
-    // 基地址
-    if (isUndefined(api.baseURL)) {
-      _api.baseURL = defaultOptions.baseURL
-    } else {
-      _api.baseURL = api.baseURL
-    }
     _api.baseURL = _api.baseURL.replace(/\/+$/, "")
 
-    // 请求方法
-    if (isUndefined(api.method)) {
-      _api.method = defaultOptions.method
-    } else if (isString(api.method) && /get|post/i.test(api.method)) {
-      _api.method = api.method.toUpperCase() as HttpMethod
-    } else {
-      invariant(false, `method 期望值为 get|post 其一，实际值为"${api.method}"`)
-    }
+    invariant(/get|post/i.test(_api.method), `method 期望值为 get|post 其一，实际值为"${_api.method}"`)
+    _api.method = _api.method.toUpperCase() as HttpMethod
 
-    if (isUndefined(api.headers)) {
-      _api.headers = defaultOptions.headers
-    } else {
-      _api.headers = api.headers
-    }
+    warning(_api.method === 'GET' || !_api.enableCache, `只有 GET 请求支持开启缓存，当前请求方法为"${_api.method}"，缓存开启不会生效`)
 
-    // 描述
-    if (isFunction(api.description)) {
-      _api.description = String(api.description.call(null, api))
-    } else {
-      _api.description = api.description || ''
-    }
+    _api.timeout = Math.ceil(Math.max(_api.timeout, 0))
 
-    // 开启缓存
-    if (isUndefined(api.enableCache)) {
-      _api.enableCache = defaultOptions.enableCache
-    } else if (isFunction(api.enableCache)) {
-      _api.enableCache = !!api.enableCache.call(null, api)
-    } else {
-      _api.enableCache = !!api.enableCache
-    }
-    if (_api.method.toUpperCase() !== "GET" && _api.enableCache) {
-      _api.enableCache = false
-      warning(false, `只有 GET 请求支持开启缓存，当前请求方法为"${_api.method}"，缓存开启不会生效`)
-    }
-
-    // 缓存时间
-    if (isUndefined(api.cacheTime)) {
-      _api.cacheTime = defaultOptions.cacheTime
-    } else if (isNumber(api.cacheTime)) {
-      _api.cacheTime = api.cacheTime
-    } else if (isFunction(api.cacheTime)) {
-      _api.cacheTime = api.cacheTime.call(null, api)
-    } else {
-      _api.cacheTime = defaultOptions.cacheTime
-      warning(false, `cacheTime 期望 number/function 类型，实际类型为${typeof api.cacheTime}，自动使用默认值`)
-    }
-
-    if (isUndefined(api.enableMock)) {
-      _api.enableMock = defaultOptions.enableMock
-    } else if (isFunction(api.enableMock)) {
-      _api.enableMock = !!api.enableMock.call(null, api)
-    } else {
-      _api.enableMock = !!api.enableMock
-    }
-
-    if (isFunction(api.mockData)) {
-      _api.mockData = api.mockData.call(null, api)
-    } else {
-      _api.mockData = api.mockData
-    }
-
-    if (isUndefined(api.enableRetry)) {
-      _api.enableRetry = defaultOptions.enableRetry
-    } else if (isFunction(api.enableRetry)) {
-      _api.enableRetry = !!api.enableRetry.call(null, api)
-    } else {
-      _api.enableRetry = !!api.enableRetry
-    }
-
-    if (isUndefined(api.retryTimes)) {
-      _api.retryTimes = defaultOptions.retryTimes
-    } else if (isNumber(api.retryTimes)) {
-      _api.retryTimes = api.retryTimes
-    } else if (isFunction(api.retryTimes)) {
-      _api.retryTimes = api.retryTimes.call(null, api)
-    } else {
-      _api.retryTimes = defaultOptions.retryTimes
-      warning(false, `retryTimes 期望 number/function 类型，实际类型为${typeof api.retryTimes}，自动使用默认值`)
-    }
-
-    // timeout
-    if (isNumber(api.timeout)) {
-      // 超时时间必须是一个非负整数
-      _api.timeout = Math.ceil(Math.max(api.timeout, 0))
-    } else {
-      _api.timeout = defaultOptions.timeout
-    }
-
-    if (isUndefined(api.enableLog)) {
-      _api.enableLog = defaultOptions.enableLog
-    } else if (isFunction(api.enableLog)) {
-      _api.enableLog = !!api.enableLog.call(null, api)
-    } else {
-      _api.enableLog = !!api.enableLog
-    }
-
-    // logFormatter
-    if (isUndefined(api.logFormatter)) {
-      _api.logFormatter = defaultOptions.logFormatter
-    } else if (isObject(api.logFormatter)) {
-      _api.logFormatter = {
-        logRequest: api.logFormatter.logRequest || defaultOptions.logFormatter.logRequest,
-        logResponse: api.logFormatter.logResponse || defaultOptions.logFormatter.logResponse,
-        logResponseError: api.logFormatter.logResponseError || defaultOptions.logFormatter.logResponseError,
-        logResponseCache: api.logFormatter.logResponseCache || defaultOptions.logFormatter.logResponseCache
-      }
-    } else {
-      _api.logFormatter = defaultOptions.logFormatter
-    }
-
-    // transformRequest
-    let _params = isUndefined(api.params) ? {} : api.params
-    let _transformRequest
-    if (isUndefined(api.transformRequest)) {
-      _transformRequest = defaultOptions.transformRequest
-    } else if (isFunction(api.transformRequest)) {
-      _transformRequest = api.transformRequest
-    } else {
-      _transformRequest = defaultOptions.transformRequest
-      warning(false, `transformRequest 期望一个函数，实际接收到${typeof api.transformRequest}`)
-    }
-    _params = _transformRequest.call(null, _params)
-
-    // paramsType
-    if (!isUndefined(api.paramsType)) {
+    const _params = _api.transformRequest.call(null, _api.params)
+    if (!isUndefined(_api.paramsType)) {
       const componentName = _api.baseURL + _api.url
-      PropTypes.checkPropTypes(api.paramsType, _params, "", componentName)
+      PropTypes.checkPropTypes(_api.paramsType, _params, "", componentName)
     }
     _api.params = _params!
-
-    // transformResponse
-    if (isUndefined(api.transformResponse)) {
-      _api.transformResponse = defaultOptions.transformResponse
-    }
-
-    // withCredentials
-    if (isUndefined(api.withCredentials)) {
-      _api.withCredentials = defaultOptions.withCredentials
-    } else {
-      _api.withCredentials = !!api.withCredentials
-    }
 
     return _api
   }

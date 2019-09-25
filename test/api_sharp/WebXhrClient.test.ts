@@ -7,6 +7,7 @@ const baseURL = "http://localhost:4000"
 
 describe("测试 XMLHttpRequest 请求", () => {
   test("请求 json 数据", async () => {
+    debugger
     const res = await apiSharp.request({
       baseURL,
       url: "/date/json"

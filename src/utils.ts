@@ -24,11 +24,26 @@ export function isPlainObject(v: any): v is Object {
   return v !== null && typeof v === "object" && v.__proto__ === Object.prototype
 }
 
+export function invariant (condition, message) {
+  if (condition) return
+  if (__DEV__) {
+    throw new Error(message)
+  }
+}
+
+export function warning (condition, message) {
+  if (condition) return
+  if (__DEV__) {
+    console.warn(message)
+  }
+}
+
 export function identity<T>(v: T): T {
   return v
 }
 
 export function encodeQuery(query: Object): string {
+  if (!isPlainObject(query)) return query
   return Object.keys(query).reduce((q, k) => {
     return (q ? q + "&" : q) + (encodeURIComponent(k) + "=" + encodeURIComponent(query[k]))
   }, "")
@@ -36,7 +51,7 @@ export function encodeQuery(query: Object): string {
 
 export function formatFullUrl(baseURL, url, query) {
   const queryString = encodeQuery(query)
-  return baseURL + url + (queryString ? "?" : "") + queryString
+  return baseURL + url + (queryString ? "?" + queryString : "")
 }
 
 export function formatResponseHeaders(headers: string): HttpHeader {
