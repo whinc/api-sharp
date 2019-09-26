@@ -48,28 +48,24 @@ function mockOnePost() {
   return { title: "post", author: "jack", date: Date.now() }
 }
 
-function hijackConsole(method, cb) {
+// 包裹console方法，并返回获取最近输出参数的方法，该方法调用后还原console方法
+function wrapConsole(method) {
+  let _args: null | any[] = null
   const originMethod = console[method]
   console[method] = function(...args) {
     originMethod.call(this, ...args)
-    cb(args)
+    _args = args
+  }
+  return {
+    getArgsAndUnwrap() {
+      console[method] = originMethod
+      return _args
+    }
   }
 }
 
-let logArgs: null | any[] = null
-let errorArgs: null | any[] = null
-beforeAll(() => {
-  hijackConsole("log", args => (logArgs = args))
-  hijackConsole("error", args => (errorArgs = args))
-})
-
 afterAll(async () => {
   await clearDB()
-})
-
-beforeEach(() => {
-  logArgs = null
-  errorArgs = null
 })
 
 describe("测试 new ApiSharp(options) 全局配置", () => {
@@ -213,9 +209,24 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     })
   })
 
+  describe("测试 api.search", () => {
+    const api: ApiDescriptor = { url: baseURL }
+    test("api.search 默认为 null", () => {
+      expect(apiSharp.processApi(api).search).toBeNull()
+    })
+  })
+
+  describe("测试 api.body", () => {
+    const api: ApiDescriptor = { url: baseURL }
+    test("api.body 默认为 null", () => {
+      expect(apiSharp.processApi(api).body).toBeNull()
+    })
+  })
+
   // 参考： https://github.com/facebook/prop-types/blob/master/factoryWithTypeCheckers.js
   describe("测试 api.searchPropTypes", () => {
     test("测试必填参数", () => {
+      const {getArgsAndUnwrap} = wrapConsole('error')
       const api: ApiDescriptor = {
         url: baseURL,
         searchPropTypes: {
@@ -235,23 +246,24 @@ describe("测试 ApiSharp.processApi() 方法", () => {
         propFullName +
         "` is marked as required in " +
         ("`" + componentName + "`, but its value is `undefined`.")
-      expect(errorArgs![0]).toBe(message)
+      expect(getArgsAndUnwrap()).toEqual([message])
     })
   })
 
   describe("测试 api.bodyPropTypes", () => {
     test("测试必填参数", () => {
+      const {getArgsAndUnwrap} = wrapConsole('error')
       const api: ApiDescriptor = {
         url: baseURL,
         method: "post",
         bodyPropTypes: {
-          id: PropTypes.number.isRequired
+          name: PropTypes.number.isRequired
         },
         body: {}
       }
       const _api = apiSharp.processApi(api)
       const location = ""
-      const propFullName = "id"
+      const propFullName = "name"
       const componentName = _api.baseURL + _api.url
       const message =
         "Warning: Failed  type: " +
@@ -261,8 +273,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
         propFullName +
         "` is marked as required in " +
         ("`" + componentName + "`, but its value is `undefined`.")
-      expect(errorArgs).toBeInstanceOf(Array)
-      expect(errorArgs![0]).toBe(message)
+      expect(getArgsAndUnwrap()).toEqual([message])
     })
   })
 
@@ -502,6 +513,7 @@ describe("测试 ApiSharp.request()", () => {
 
   describe("测试打印日志", () => {
     test("不打印日志，当关闭日志时", async () => {
+      const {getArgsAndUnwrap} = wrapConsole('log')
       try {
         const api = {
           baseURL,
@@ -514,9 +526,10 @@ describe("测试 ApiSharp.request()", () => {
         }
         await apiSharp.request(api)
       } catch (err) {}
-      expect(logArgs).toBeNull()
+      expect(getArgsAndUnwrap()).toBeNull()
     })
     test("打印日志，当开启日志时", async () => {
+      const {getArgsAndUnwrap} = wrapConsole('log')
       try {
         const api = {
           baseURL,
@@ -529,9 +542,10 @@ describe("测试 ApiSharp.request()", () => {
         }
         await apiSharp.request(api)
       } catch (err) {}
-      expect(logArgs).toBeInstanceOf(Array)
+      expect(getArgsAndUnwrap()).toBeInstanceOf(Array)
     })
     test("按自定义格式打印日志，当开启日志并设置了自定义格式化方法时", async () => {
+      const {getArgsAndUnwrap} = wrapConsole('log')
       try {
         const api = {
           baseURL,
@@ -545,7 +559,7 @@ describe("测试 ApiSharp.request()", () => {
         }
         await apiSharp.request(api)
       } catch (err) {}
-      expect(logArgs).toEqual(["hello"])
+      expect(getArgsAndUnwrap()).toEqual(["hello"])
     })
   })
 

@@ -20,7 +20,7 @@ export function isObject(v: any): v is Object {
   return v !== null && typeof v === "object"
 }
 
-export function isPlainObject(v: any): v is Object {
+export function isPlainObject(v: any): v is object {
   return v !== null && typeof v === "object" && v.__proto__ === Object.prototype
 }
 
@@ -79,7 +79,7 @@ export function getSortedString(value: any): string {
   let str = ""
   if (Array.isArray(value)) {
     str = "[" + [...value].sort().map(getSortedString) + "]"
-  } else if (typeof value === "object") {
+  } else if (isPlainObject(value)) {
     str = Object.keys(value)
       .sort()
       .reduce((str, key, index, arr) => {

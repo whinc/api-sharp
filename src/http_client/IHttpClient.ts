@@ -12,6 +12,9 @@ export type HttpMethod = "get" | "GET" | "post" | "POST"
 
 export type HttpHeader = { [key: string]: string }
 
+export type SearchType = object | null
+export type BodyType = object | null
+
 /**
  * 请求参数接口
  *
@@ -33,7 +36,7 @@ export interface IRequest {
    *
    * 仅当请求方法为`"POST"`时有效
    */
-  body?: Object
+  body: BodyType
   /**
    * HTTP 请求头
    *

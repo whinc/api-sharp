@@ -1,7 +1,7 @@
 import { Validator, checkPropTypes } from "prop-types"
 import { isString, getSortedString, identity, invariant, warning, isPlainObject } from "./utils"
 import { ICache, ExpireCache } from "./cache"
-import { WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader } from "./http_client"
+import { WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader, BodyType, SearchType } from "./http_client"
 import { formatFullUrl } from "./utils"
 
 const removeUndefinedValue = target => {
@@ -20,8 +20,6 @@ export interface ApiResponse<T> extends IResponse<T> {
    */
   from: "cache" | "network" | "mock"
 }
-
-export type BodyType = { [key: string]: BodyType | number | string | undefined | null | boolean }
 
 export type ApiDescriptor = CommonApiDescriptor & WebXhrApiDescriptor
 
@@ -69,7 +67,7 @@ interface CommonApiDescriptor {
    *
    * 例如：`{a: 1, b: 2}`会转换成`"a=1&b=2"`
    */
-  search?: Object
+  search?: SearchType
   /**
    * 请求 URL 中的查询参数类型
    *
@@ -77,7 +75,7 @@ interface CommonApiDescriptor {
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  searchPropTypes?: { [key: string]: Validator<any> }
+  searchPropTypes?: { [key: string]: Validator<any> } | null
   /**
    * 请求体中的数据
    *
@@ -94,7 +92,7 @@ interface CommonApiDescriptor {
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  bodyPropTypes?: { [key: string]: Validator<any> }
+  bodyPropTypes?: { [key: string]: Validator<any> } | null
   /**
    * 转换请求体中的数据
    */
@@ -191,8 +189,7 @@ export enum LogType {
 /**
  * 全局配置项
  */
-export interface ApiSharpOptions
-  extends Omit<ApiDescriptor, "url" | "description" | "body" | "bodyPropTypes" | "search" | "searchPropTypes"> {
+export interface ApiSharpOptions extends Partial<ApiDescriptor> {
   httpClient?: IHttpClient
   cache?: ICache<Promise<IResponse<any>>>
 }
@@ -216,6 +213,12 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   withCredentials: false,
   baseURL: "",
   headers: {},
+  url: '',
+  description: '',
+  search: null,
+  searchPropTypes: null,
+  body: null,
+  bodyPropTypes: null,
   enableMock: false,
   mockData: undefined,
   method: "GET",
@@ -356,12 +359,12 @@ export class ApiSharp {
   }
 
   private sendRequest<T>(api: ProcessedApiDescriptor): Promise<IResponse<T>> {
-    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.search : undefined)
+    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.search : null)
     return this.httpClient.request<T>({
       url: fullUrl,
       method: api.method,
       headers: api.headers,
-      body: api.method === "POST" ? api.body : undefined
+      body: api.method === "POST" ? api.body : null
     })
   }
 
@@ -381,7 +384,6 @@ export class ApiSharp {
 
     const { httpClient, cache, ..._defaultOptions } = defaultOptions
     const _api = {
-      description: "",
       ..._defaultOptions,
       ...removeUndefinedValue(this.options),
       ...removeUndefinedValue(api)
@@ -401,7 +403,7 @@ export class ApiSharp {
 
     _api.timeout = Math.ceil(Math.max(_api.timeout, 0))
 
-    const _search = api.search || {}
+    const _search = _api.search
     // 类型检查
     if (__DEV__) {
       if (isPlainObject(_search) && isPlainObject(_api.searchPropTypes)) {
