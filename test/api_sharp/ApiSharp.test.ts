@@ -88,7 +88,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     expect(_api.retryTimes).toBe(defaultOptions.retryTimes)
     expect(_api.timeout).toBe(defaultOptions.timeout)
     expect(_api.enableLog).toBe(defaultOptions.enableLog)
-    expect(_api.logFormatter).toBe(defaultOptions.logFormatter)
+    expect(_api.formatLog).toBe(defaultOptions.formatLog)
   })
 
   test("当 ApiSharp.request() 中未指定配置项，但 new ApiSharp() 中指定了时，则使用 new ApiSharp() 中的配置，", () => {
@@ -106,12 +106,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
       retryTimes: 9999,
       timeout: 999,
       enableLog: true,
-      logFormatter: {
-        logRequest: identity,
-        logResponse: identity,
-        logResponseCache: identity,
-        logResponseError: identity
-      }
+      formatLog: identity
     }
     const apiSharp: any = new ApiSharp(options)
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
@@ -126,7 +121,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     expect(_api.retryTimes).toBe(options.retryTimes)
     expect(_api.timeout).toBe(options.timeout)
     expect(_api.enableLog).toBe(options.enableLog)
-    expect(_api.logFormatter).toEqual(options.logFormatter)
+    expect(_api.formatLog).toEqual(options.formatLog)
   })
 })
 
@@ -139,7 +134,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     test("api 为 string 时，等价于 {url: string}", () => {
       const api = "http://xyz.com"
       const _api = apiSharp.processApi(api)
-      expect(_api).toHaveProperty('url', api)
+      expect(_api).toHaveProperty("url", api)
     })
   })
 
@@ -173,11 +168,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
 
   test("测试 api.description 取值", () => {
     const api: ApiDescriptor = { url: "http://www.test.com" }
-    const values = [
-      [undefined, ""],
-      ["", ""],
-      ["hello", "hello"],
-    ]
+    const values = [[undefined, ""], ["", ""], ["hello", "hello"]]
     values.forEach(([received, expected]) => {
       api.description = received
       expect(apiSharp.processApi(api).description).toBe(expected)
@@ -481,12 +472,7 @@ describe("测试 ApiSharp.request()", () => {
           },
           // 开启日志
           enableLog: true,
-          logFormatter: {
-            logRequest: () => console.log("hello"),
-            logResponse: () => console.log("hello"),
-            logResponseError: () => console.log("hello"),
-            logResponseCache: () => console.log("hello")
-          }
+          formatLog: (_type, _api, _data) => console.log("hello")
         }
         await apiSharp.request(api)
       } catch (err) {}
@@ -594,7 +580,7 @@ describe("测试 ApiSharp.request()", () => {
           timeout: 1
         })
       } catch (err) {
-        expect(err.message).toMatch('请求超时')
+        expect(err.message).toMatch("请求超时")
       }
     })
   })
