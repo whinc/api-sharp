@@ -1,11 +1,11 @@
 import axios from "axios"
 import PropTypes from "prop-types"
 import { ApiSharp, defaultOptions, ApiSharpOptions, ApiDescriptor, ProcessedApiDescriptor } from "../../src/ApiSharp"
-import { WebXhrClient } from "../../src/http_client"
+import { WebXhrClient, HttpMethod } from "../../src/http_client"
 import { identity } from "../../src/utils"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
-const apiSharp: any = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
+const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
 
 const baseURL = "http://localhost:4000"
 
@@ -29,7 +29,7 @@ async function requestPostPost(newPost) {
     baseURL,
     url: "/posts",
     method: "POST",
-    params: newPost
+    body: newPost
   })
 }
 
@@ -38,7 +38,7 @@ async function requestGetPost(id) {
     baseURL,
     url: "/posts",
     method: "GET",
-    params: { id }
+    body: { id }
   })
   data.data = data.data[0]
   return data
@@ -141,8 +141,8 @@ describe("测试 ApiSharp.processApi() 方法", () => {
   describe("测试 api.url 取值", () => {
     test("api.url 为空(空串/undefined/null)时抛出异常", () => {
       const api = {}
-      expect(() => apiSharp.processApi({ ...api, url: undefined })).toThrow()
-      expect(() => apiSharp.processApi({ ...api, url: null })).toThrow()
+      expect(() => apiSharp.processApi({ ...api, url: undefined! })).toThrow()
+      expect(() => apiSharp.processApi({ ...api, url: null! })).toThrow()
       expect(() => apiSharp.processApi({ ...api, url: "" })).toThrow()
     })
   })
@@ -183,9 +183,6 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     test("api.enableMock 为 true，当设置为 true 后", () => {
       expect(apiSharp.processApi({ ...api, enableMock: true }).enableMock).toBeTruthy()
     })
-    test("api.enableMock 为 true，当设置为 () => true 后", () => {
-      expect(apiSharp.processApi({ ...api, enableMock: () => true }).enableMock).toBeTruthy()
-    })
   })
 
   describe("测试 api.mockData 取值", () => {
@@ -213,6 +210,78 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     const api: ApiDescriptor = { url: baseURL }
     test("api.retryTimes 默认为 1", () => {
       expect(apiSharp.processApi(api).retryTimes).toBe(1)
+    })
+  })
+
+  // 参考： https://github.com/facebook/prop-types/blob/master/factoryWithTypeCheckers.js
+  describe("测试 api.searchPropTypes", () => {
+    test("测试必填参数", () => {
+      const api: ApiDescriptor = {
+        url: baseURL,
+        searchPropTypes: {
+          id: PropTypes.number.isRequired
+        },
+        search: {}
+      }
+      const _api = apiSharp.processApi(api)
+      const location = ""
+      const propFullName = "id"
+      const componentName = _api.baseURL + _api.url
+      const message =
+        "Warning: Failed  type: " +
+        "The " +
+        location +
+        " `" +
+        propFullName +
+        "` is marked as required in " +
+        ("`" + componentName + "`, but its value is `undefined`.")
+      expect(errorArgs![0]).toBe(message)
+    })
+  })
+
+  describe("测试 api.bodyPropTypes", () => {
+    test("测试必填参数", () => {
+      const api: ApiDescriptor = {
+        url: baseURL,
+        method: "post",
+        bodyPropTypes: {
+          id: PropTypes.number.isRequired
+        },
+        body: {}
+      }
+      const _api = apiSharp.processApi(api)
+      const location = ""
+      const propFullName = "id"
+      const componentName = _api.baseURL + _api.url
+      const message =
+        "Warning: Failed  type: " +
+        "The " +
+        location +
+        " `" +
+        propFullName +
+        "` is marked as required in " +
+        ("`" + componentName + "`, but its value is `undefined`.")
+      expect(errorArgs).toBeInstanceOf(Array)
+      expect(errorArgs![0]).toBe(message)
+    })
+  })
+
+  describe("测试请求参数转换", () => {
+    test("传入数字类型参数，转换成字符串类型后，实际接收的参数是字符串类型", () => {
+      const id = 10
+      const api: ApiDescriptor = {
+        url: baseURL,
+        method: "post",
+        bodyPropTypes: {
+          id: PropTypes.string.isRequired
+        },
+        body: {
+          id
+        },
+        transformRequest: (body: any) => ({ ...body, id: String(body.id) })
+      }
+      const _api = apiSharp.processApi(api)
+      expect(_api.body).toEqual({ id: String(id) })
     })
   })
 })
@@ -243,7 +312,7 @@ describe("测试 ApiSharp.request()", () => {
       const api = {
         baseURL,
         url: "/posts/",
-        method: "POST",
+        method: "POST" as HttpMethod,
         enableCache: true,
         params: mockOnePost()
       }
@@ -303,16 +372,16 @@ describe("测试 ApiSharp.request()", () => {
     test("GET 请求不会被缓存，当开启缓存且请求的参数不同时", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
-      const api = {
+      const api: ApiDescriptor = {
         baseURL,
         url: "/posts/",
         enableCache: true,
-        params: {
+        search: {
           id: response.data.id
         }
       }
       const firstResponse = await apiSharp.request(api)
-      const secondResponse = await apiSharp.request({ ...api, params: { id: response.data.id + 1 } })
+      const secondResponse = await apiSharp.request({ ...api, search: { id: response.data.id + 1 } })
       expect(firstResponse.from).toBe("network")
       expect(secondResponse.from).toBe("network")
     })
@@ -480,50 +549,6 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
 
-  // 参考： https://github.com/facebook/prop-types/blob/master/factoryWithTypeCheckers.js
-  describe("测试请求参数类型", () => {
-    test("测试必填参数", () => {
-      const api = {
-        url: baseURL,
-        paramsType: {
-          id: PropTypes.number.isRequired
-        },
-        params: {}
-      }
-      const _api = apiSharp.processApi(api)
-      const location = ""
-      const propFullName = "id"
-      const componentName = _api.baseURL + _api.url
-      const message =
-        "Warning: Failed  type: " +
-        "The " +
-        location +
-        " `" +
-        propFullName +
-        "` is marked as required in " +
-        ("`" + componentName + "`, but its value is `undefined`.")
-      expect(errorArgs![0]).toBe(message)
-    })
-  })
-
-  describe("测试请求参数转换", () => {
-    test("传入数字类型参数，转换成字符串类型后，实际接收的参数是字符串类型", () => {
-      const id = 10
-      const api = {
-        url: baseURL,
-        paramsType: {
-          id: PropTypes.string.isRequired
-        },
-        params: {
-          id
-        },
-        transformRequest: params => ({ ...params, id: String(params.id) })
-      }
-      const _api = apiSharp.processApi(api)
-      expect(_api.params).toEqual({ id: String(id) })
-    })
-  })
-
   describe("测试响应数据转换", () => {
     test("返回数据是对象，转换后数字后，实际调用返回的应该是这个数字", async () => {
       const newPost = mockOnePost()
@@ -531,7 +556,7 @@ describe("测试 ApiSharp.request()", () => {
         baseURL,
         url: "/posts",
         method: "POST",
-        params: newPost,
+        body: newPost,
         transformResponse: returns => ({ ...returns, extra: 100 })
       })
       expect(response.data.extra).toEqual(100)
@@ -546,7 +571,7 @@ describe("测试 ApiSharp.request()", () => {
           baseURL,
           url: "/posts",
           method: "POST",
-          params: newPost,
+          body: newPost,
           timeout: 100 * 1000
         })
       } catch (err) {
@@ -561,7 +586,7 @@ describe("测试 ApiSharp.request()", () => {
           baseURL,
           url: "/posts",
           method: "POST",
-          params: newPost,
+          body: newPost,
           timeout: 0
         })
       } catch (err) {
@@ -576,7 +601,7 @@ describe("测试 ApiSharp.request()", () => {
           baseURL,
           url: "/posts",
           method: "POST",
-          params: newPost,
+          body: newPost,
           timeout: 1
         })
       } catch (err) {

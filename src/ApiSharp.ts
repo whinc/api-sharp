@@ -1,6 +1,5 @@
-import PropTypes from "prop-types"
-import { Validator } from "prop-types"
-import { isString, getSortedString, isUndefined, identity, invariant, warning } from "./utils"
+import { Validator, checkPropTypes } from "prop-types"
+import { isString, getSortedString, identity, invariant, warning, isPlainObject } from "./utils"
 import { ICache, ExpireCache } from "./cache"
 import { WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader } from "./http_client"
 import { formatFullUrl } from "./utils"
@@ -22,10 +21,7 @@ export interface ApiResponse<T> extends IResponse<T> {
   from: "cache" | "network" | "mock"
 }
 
-export type ReturnTypeFn<T> = (api: ApiDescriptor) => T
-export type Params = Object
-export type ParamsType = { [key in keyof Params]: Validator<any> }
-export type Transformer<T> = (value: T) => T
+export type BodyType = { [key: string]: BodyType | number | string | undefined | null | boolean }
 
 export type ApiDescriptor = CommonApiDescriptor & WebXhrApiDescriptor
 
@@ -67,31 +63,42 @@ interface CommonApiDescriptor {
    */
   description?: string
   /**
-   * 请求参数
+   * 请求 URL 中的查询参数
    *
-   * 最终发送给服务器的数据是 string 类型，数据转换规则如下：
-   * - 对于 GET 请求，数据转换成 query string（encodeURIComponent(k)=encodeURIComponent(v)&encodeURIComponent(k)=encodeURIComponent(v)...）
-   * - 对于 POST 请求，会对数据进行 JSON 序列化
+   * 对象会转换成 URL 查询字符串并拼接在 URL 后面，转换规则：encodeURIComponent(k1)=encodeURIComponent(v1)&encodeURIComponent(k2)=encodeURIComponent(v2)...
    *
-   * 例如：`{id: 100}`
+   * 例如：`{a: 1, b: 2}`会转换成`"a=1&b=2"`
    */
-  params?: Params
+  search?: Object
   /**
-   * 请求参数类型
+   * 请求 URL 中的查询参数类型
    *
-   * 支持 PropType 类型，类型不符时控制台输出错误提示（但不影响接口继续请求），仅在`process.env.NODE_ENV !== 'production'`时有效，生产环境不会引入 prop-types 包
+   * 仅当 search 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  paramsType?: ParamsType
+  searchPropTypes?: { [key: string]: Validator<any> }
   /**
-   * 转换请求参数
+   * 请求体中的数据
    *
-   * 用户发起调用 -> params(原始参数) -> transformRequest(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
+   * 仅支持 POST 请求，数据会转换成字符串传输，转换规则由请求头`Content-Type`决定：
+   * 请求头包含`Content-Type: application/json`时，数据序列化为 JSON 字符串
    *
-   * 例如：`(params) => ({...params, name: 'abc'})`
+   * 例如：`{a: 1, b: 2}`
    */
-  transformRequest?: Transformer<Params>
+  body?: BodyType
+  /**
+   * 请求体中的数据类型
+   *
+   * 仅当 body 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
+   *
+   * 例如：`{ id: PropTypes.number.isRequired }`
+   */
+  bodyPropTypes?: { [key: string]: Validator<any> }
+  /**
+   * 转换请求体中的数据
+   */
+  transformRequest?: (body: BodyType, headers: Object) => any
   /**
    * 转换响应数据
    *
@@ -100,7 +107,7 @@ interface CommonApiDescriptor {
    * 例如：`(data) => ({...data, errMsg: 'errCode: ' + data.errCode})`
    *
    */
-  transformResponse?: Transformer<any>
+  transformResponse?: (data: any) => any
   /**
    * 开启缓存
    *
@@ -184,7 +191,8 @@ export enum LogType {
 /**
  * 全局配置项
  */
-export interface ApiSharpOptions extends Omit<ApiDescriptor, "url" | "description" | "params" | "paramsType"> {
+export interface ApiSharpOptions
+  extends Omit<ApiDescriptor, "url" | "description" | "body" | "bodyPropTypes" | "search" | "searchPropTypes"> {
   httpClient?: IHttpClient
   cache?: ICache<Promise<IResponse<any>>>
 }
@@ -227,7 +235,7 @@ export const defaultOptions: Required<ApiSharpOptions> = {
       "",
       `color: ${config.fgColor}`,
       "",
-      api.params,
+      api.body,
       data
     )
   }
@@ -348,20 +356,23 @@ export class ApiSharp {
   }
 
   private sendRequest<T>(api: ProcessedApiDescriptor): Promise<IResponse<T>> {
-    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.params : {})
+    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.search : undefined)
     return this.httpClient.request<T>({
       url: fullUrl,
       method: api.method,
       headers: api.headers,
-      body: api.method === "POST" ? api.params : null
+      body: api.method === "POST" ? api.body : undefined
     })
   }
 
   private generateCachedKey(api: ApiDescriptor) {
-    return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.params)}`
+    return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.search)}`
   }
 
-  private processApi(api: ApiDescriptor | string): ProcessedApiDescriptor {
+  /**
+   * 预处理接口，设置默认值、进行类型检查、数据转换等
+   */
+  public processApi(api: ApiDescriptor | string): ProcessedApiDescriptor {
     invariant(api, "api 为空")
 
     if (isString(api)) {
@@ -390,12 +401,26 @@ export class ApiSharp {
 
     _api.timeout = Math.ceil(Math.max(_api.timeout, 0))
 
-    const _params = _api.transformRequest.call(null, _api.params)
-    if (!isUndefined(_api.paramsType)) {
-      const componentName = _api.baseURL + _api.url
-      PropTypes.checkPropTypes(_api.paramsType, _params, "", componentName)
+    const _search = api.search || {}
+    // 类型检查
+    if (__DEV__) {
+      if (isPlainObject(_search) && isPlainObject(_api.searchPropTypes)) {
+        const name = _api.baseURL + _api.url
+        checkPropTypes(_api.searchPropTypes, _search, "", name)
+      }
     }
-    _api.params = _params!
+    _api.search = _search
+
+    // 转换请求体中的数据
+    const _body = _api.transformRequest.call(null, _api.body, _api.headers)
+    // 类型检查
+    if (__DEV__) {
+      if (isPlainObject(_body) && isPlainObject(_api.bodyPropTypes)) {
+        const name = _api.baseURL + _api.url
+        checkPropTypes(_api.bodyPropTypes, _body, "", name)
+      }
+    }
+    _api.body = _body
 
     return _api
   }

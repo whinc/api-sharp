@@ -14,13 +14,13 @@ export type HttpHeader = { [key: string]: string }
 
 /**
  * 请求参数接口
- * 
+ *
  * 由具体平台实现该接口，尽量保持接口精简，减少针对平台的实现成本
  */
 export interface IRequest {
   /**
    * 接口请求地址，是一个绝对路径
-   * 
+   *
    * 例如：`"http://xyz.com?a=b"`
    */
   url: string
@@ -30,13 +30,13 @@ export interface IRequest {
   method: HttpMethod
   /**
    * 请求数据
-   * 
+   *
    * 仅当请求方法为`"POST"`时有效
    */
-  body: Object | null
+  body?: Object
   /**
    * HTTP 请求头
-   * 
+   *
    * 例如：`{"Content-Type": "application/json"}`
    */
   headers: HttpHeader
