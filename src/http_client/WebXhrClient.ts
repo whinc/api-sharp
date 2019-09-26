@@ -1,4 +1,4 @@
-import { formatResponseHeaders, isPlainObject } from "../utils"
+import { formatResponseHeaders, isPlainObject, serializeSearch, isFormData } from "../utils"
 import IHttpClient, {IResponse, IRequest} from "./IHttpClient"
 
 export interface WebXhrRequest extends IRequest {
@@ -11,9 +11,36 @@ export default class WebXhrClient implements IHttpClient {
       // 暂存返回数据
       let _response: IResponse<T>
       const xhr = new XMLHttpRequest()
+      xhr.open(options.method, options.url, true)
 
       // 跨域请求带凭证
       xhr.withCredentials = options.withCredentials || false
+
+      // 转换数据
+      let body: Document | BodyInit | null = null
+      if (options.method === "POST") {
+        if (isPlainObject(options.body)) {
+          // 如果是纯 JS 对象，则依据 Content-Type 序列化成字符串
+          const contentType = options.headers['Content-Type']
+          if (contentType === "application/json") {
+            body = JSON.stringify(options.body)
+          } else if (contentType === 'application/x-www-form-urlencoded') {
+            body = serializeSearch(options.body)
+          } else {
+            body = String(options.body)
+          }
+        } else if (isFormData(options.body)) {
+          // 如果是表单，让浏览器设置请求 Content-Type
+          delete options.headers['Content-Type']
+          body = options.body
+        } else {
+          // 其他情况透传
+          body = options.body
+        }
+      }
+
+      // 设置请求头
+      Object.keys(options.headers).forEach(key => xhr.setRequestHeader(key, options.headers[key]))
 
       /**
        * 事件触发顺序：readystatechange -> timeout -> loadend
@@ -25,20 +52,6 @@ export default class WebXhrClient implements IHttpClient {
         resolve(_response)
       }
 
-      xhr.open(options.method, options.url, true)
-      // 设置请求头
-      Object.keys(options.headers).forEach(key => xhr.setRequestHeader(key, options.headers[key]))
-
-      // 设置请求数据
-      let body: Document | BodyInit | null = null
-      if (options.method === "POST") {
-        if (isPlainObject(options.body)) {
-          body = JSON.stringify(options.body)
-          xhr.setRequestHeader("Content-Type", "application/json")
-        } else {
-          body = options.body
-        }
-      }
       // 设置响应数据类型（只支持 JSON）
       xhr.responseType = "text"
       xhr.onreadystatechange = function() {

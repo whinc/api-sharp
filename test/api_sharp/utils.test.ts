@@ -18,4 +18,6 @@ describe("测试工具类", () => {
     query = undefined
     expect(formatFullUrl(baseURL, url, query)).toBe(`${baseURL}${url}`)
   })
+
+  // test("sera")
 })

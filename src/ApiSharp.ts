@@ -4,7 +4,7 @@ import { ICache, ExpireCache } from "./cache"
 import { WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader, BodyType, SearchType } from "./http_client"
 import { formatFullUrl } from "./utils"
 
-const removeUndefinedValue = target => {
+const removeUndefinedValue = (target) => {
   return Object.keys(target)
     .filter(key => target[key] !== undefined)
     .reduce((obj, key) => Object.assign(obj, { [key]: target[key] }), {})
@@ -48,10 +48,10 @@ interface CommonApiDescriptor {
   method?: HttpMethod
   /**
    * HTTP 请求头
+   * 
+   * 如果设置了全局 headers，接口中的 headers 将于全局 headers 合并，且接口中的 header 优先级更高
    *
-   * 默认`{}`
-   *
-   * 例如：`{"Content-Type": "application/json"}`
+   * 默认`{"Content-Type": "application/json"}`
    */
   headers?: HttpHeader
   /**
@@ -212,7 +212,9 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   cache: new ExpireCache<Promise<IResponse<any>>>(),
   withCredentials: false,
   baseURL: "",
-  headers: {},
+  headers: {
+    "Content-Type": "application/json"
+  },
   url: '',
   description: '',
   search: null,
@@ -372,6 +374,22 @@ export class ApiSharp {
     return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.search)}`
   }
 
+  private mergeApi (api: ApiDescriptor, options: ApiSharpOptions, defaultOptions: Required<ApiSharpOptions>): ProcessedApiDescriptor {
+    const { httpClient, cache, ..._defaultOptions } = defaultOptions
+    const _options = removeUndefinedValue(options) as ApiSharpOptions
+    const _api = removeUndefinedValue(api) as Required<ApiSharpOptions>
+    return {
+      ..._defaultOptions,
+      ..._options,
+      ..._api,
+      headers: {
+        ...defaultOptions.headers,
+        ..._options.headers,
+        ..._api.headers
+      }
+    }
+  }
+
   /**
    * 预处理接口，设置默认值、进行类型检查、数据转换等
    */
@@ -382,13 +400,7 @@ export class ApiSharp {
       api = { url: api }
     }
 
-    const { httpClient, cache, ..._defaultOptions } = defaultOptions
-    const _api = {
-      ..._defaultOptions,
-      ...removeUndefinedValue(this.options),
-      ...removeUndefinedValue(api)
-    } as ProcessedApiDescriptor
-
+    const _api =  this.mergeApi(api, this.options, defaultOptions)
     invariant(_api.url && isString(_api.url), "url 为空")
 
     _api.baseURL = _api.baseURL.replace(/\/+$/, "")

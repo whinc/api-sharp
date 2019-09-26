@@ -1,4 +1,4 @@
-import { HttpHeader } from 'http_client/IHttpClient'
+import { HttpHeader } from "http_client/IHttpClient"
 
 export function isString(v: any): v is string {
   return typeof v === "string"
@@ -24,14 +24,18 @@ export function isPlainObject(v: any): v is object {
   return v !== null && typeof v === "object" && v.__proto__ === Object.prototype
 }
 
-export function invariant (condition, message) {
+export function isFormData(v) {
+  return typeof FormData !== "undefined" && v instanceof FormData
+}
+
+export function invariant(condition, message) {
   if (condition) return
   if (__DEV__) {
     throw new Error(message)
   }
 }
 
-export function warning (condition, message) {
+export function warning(condition, message) {
   if (condition) return
   if (__DEV__) {
     console.warn(message)
@@ -95,4 +99,42 @@ export function getSortedString(value: any): string {
     str = String(value)
   }
   return str
+}
+
+function encode(val: string): string {
+  return encodeURIComponent(val)
+    .replace(/%40/gi, "@")
+    .replace(/%3A/gi, ":")
+    .replace(/%24/g, "$")
+    .replace(/%2C/gi, ",")
+    .replace(/%20/g, "+")
+    .replace(/%5B/gi, "[")
+    .replace(/%5D/gi, "]")
+}
+
+export function serializeSearch(search: object): string {
+  let parts: string[] = []
+  Object.keys(search).forEach(key => {
+    let val = search[key]
+    if (val === null || typeof val === "undefined") {
+      return
+    }
+
+    if (Array.isArray(val)) {
+      key = key + "[]"
+    } else {
+      val = [val]
+    }
+
+    val.forEach(v => {
+      if (isPlainObject(v)) {
+        v = JSON.stringify(v)
+      } else {
+        v = String(v)
+      }
+      parts.push(encode(key) + "=" + encode(v))
+    })
+  })
+
+  return parts.join("&")
 }

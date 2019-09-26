@@ -108,7 +108,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
     expect(_api.baseURL).toBe(options.baseURL)
     expect(_api.method).toBe(options.method!.toUpperCase())
-    expect(_api.headers).toEqual(options.headers)
+    expect(_api.headers).toEqual({...defaultOptions.headers, ...options.headers})
     // expect(_api.transformRequest).toBe(options.transformRequest)
     expect(_api.transformResponse).toBe(options.transformResponse)
     expect(_api.enableCache).toBe(options.enableCache)
@@ -118,6 +118,26 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     expect(_api.timeout).toBe(options.timeout)
     expect(_api.enableLog).toBe(options.enableLog)
     expect(_api.formatLog).toEqual(options.formatLog)
+  })
+  test("当 ApiSharp.request() 和 new ApiSharp() 中均指定了时，部分配置项进行合并", () => {
+    const api: ApiDescriptor = {
+      url: "http://anything",
+      headers: {
+        a: 'a'
+      }
+    }
+    const options: ApiSharpOptions = {
+      headers: {
+        b: "b"
+      }
+    }
+    const apiSharp = new ApiSharp(options)
+    const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
+    expect(_api.headers).toEqual({
+      ...defaultOptions.headers,
+      ...options.headers,
+      ...api.headers,
+    })
   })
 })
 
