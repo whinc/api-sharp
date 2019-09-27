@@ -56,19 +56,15 @@ export default class WebXhrClient implements IHttpClient {
       xhr.responseType = options.responseType
       xhr.onreadystatechange = function() {
         if (this.readyState === XMLHttpRequest.DONE) {
-          if (this.status >= 200 && this.status < 300) {
-            const headers = formatResponseHeaders(this.getAllResponseHeaders())
-            const response = {
-              data: this.response,
-              status: this.status,
-              statusText: this.statusText,
-              headers
-            }
-            _response = response
-            resolve(_response)
-          } else {
-            reject(new Error(this.statusText))
+          const headers = formatResponseHeaders(this.getAllResponseHeaders())
+          const response = {
+            data: this.response,
+            status: this.status,
+            statusText: this.statusText,
+            headers
           }
+          _response = response
+          resolve(_response)
         }
       }
       xhr.send(body)

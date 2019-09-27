@@ -64,6 +64,11 @@ function wrapConsole(method) {
   }
 }
 
+beforeEach(() => {
+  // 重置告警缓存（默认输出过一次的告警会被缓存，第二次出现重复告警时不会打印，导致依赖打印的测试失效）
+  PropTypes.resetWarningCache()
+})
+
 afterAll(async () => {
   await clearDB()
 })
@@ -290,8 +295,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
   })
 
   describe("测试 api.transformRequest", () => {
-    test("传入数字类型参数，转换成字符串类型后，实际接收的参数是字符串类型", () => {
-      const id = 10
+    test("转换请求数据", () => {
       const api: ApiDescriptor = {
         url: baseURL,
         method: "post",
@@ -299,12 +303,29 @@ describe("测试 ApiSharp.processApi() 方法", () => {
           id: PropTypes.string.isRequired
         },
         body: {
-          id
+          id: 10
         },
-        transformRequest: (body: any) => ({ ...body, id: String(body.id) })
+        transformRequest: (body: any) => ({ ...body, name: "jack" })
       }
       const _api = apiSharp.processApi(api)
-      expect(_api.body).toEqual({ id: String(id) })
+      expect(_api.body).toEqual({ id: 10, name: "jack" })
+    })
+    test("在转换请求数据前，进行类型检查", () => {
+      const api: ApiDescriptor = {
+        url: baseURL,
+        method: "post",
+        bodyPropTypes: {
+          name: PropTypes.string.isRequired
+        },
+        body: {
+          id: 10
+        },
+        transformRequest: (body: any) => ({ ...body, name: "jack" })
+      }
+      const {getArgsAndUnwrap} = wrapConsole("error")
+      const _api = apiSharp.processApi(api)
+      expect(getArgsAndUnwrap()).not.toBeNull()
+      expect(_api.body).toEqual({ id: 10, name: "jack" })
     })
   })
 

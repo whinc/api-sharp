@@ -95,9 +95,9 @@ interface CommonApiDescriptor {
    */
   body?: BodyType
   /**
-   * 请求体中的数据类型
+   * 传入的`body`的数据类型
    *
-   * 仅当 body 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
+   * 仅当 body 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行类型检查，类型检查时机发生在使用`transformRequest`进行数据转换之前
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
@@ -431,7 +431,7 @@ export class ApiSharp {
     _api.timeout = Math.ceil(Math.max(_api.timeout, 0))
 
     const _query = _api.query
-    // 类型检查
+    // 检查查询参数类型
     if (__DEV__) {
       if (isPlainObject(_query) && isPlainObject(_api.queryPropTypes)) {
         const name = _api.baseURL + _api.url
@@ -440,16 +440,16 @@ export class ApiSharp {
     }
     _api.query = _query
 
-    // 转换请求体中的数据
-    const _body = _api.transformRequest.call(null, _api.body, _api.headers)
-    // 类型检查
+    const _body = _api.body
+    // 检查请求数据类型
     if (__DEV__) {
       if (isPlainObject(_body) && isPlainObject(_api.bodyPropTypes)) {
         const name = _api.baseURL + _api.url
         checkPropTypes(_api.bodyPropTypes, _body, "", name)
       }
     }
-    _api.body = _body
+    // 转换请求数据
+    _api.body = _api.transformRequest.call(null, _body, _api.headers)
 
     return _api
   }
