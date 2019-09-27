@@ -25,7 +25,7 @@ export type ResponseType = "text" | "json"
  */
 export type IRequest = Pick<ProcessedApiDescriptor, "url" | "method" | "body" | "headers" | "responseType">
 
-export interface IResponse<T> {
+export interface IResponse<T = any> {
   /**
    * 接口返回数据
    * 返回 HTTP 响应数据经过数据转换后的值

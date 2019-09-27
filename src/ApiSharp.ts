@@ -118,6 +118,14 @@ interface CommonApiDescriptor {
    */
   transformRequest?: (body: BodyType, headers: Object) => any
   /**
+   * 检查响应数据是否有效
+   * 
+   * 检查函数返回 true 表示成功，返回 false 表示失败。也可以返回一个 Error 对象来表示失败，同时携带相关错误信息。
+   * 
+   * 默认：`(res) => res.status >= 200 && res.status < 300`
+   */
+  validateResponse?: (res: IResponse) => boolean | Error
+  /**
    * 转换响应数据
    */
   transformResponse?: (data: any) => any
@@ -206,7 +214,7 @@ export enum LogType {
  */
 export interface ApiSharpOptions extends Partial<ApiDescriptor> {
   httpClient?: IHttpClient
-  cache?: ICache<Promise<IResponse<any>>>
+  cache?: ICache<Promise<IResponse>>
 }
 
 const configMap = {
@@ -218,7 +226,7 @@ const configMap = {
 
 export const defaultOptions: Required<ApiSharpOptions> = {
   httpClient: new WebXhrClient(),
-  cache: new ExpireCache<Promise<IResponse<any>>>(),
+  cache: new ExpireCache<Promise<IResponse>>(),
   withCredentials: false,
   baseURL: "",
   headers: {
@@ -238,6 +246,7 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   cacheTime: 5 * 1000,
   transformRequest: identity,
   transformResponse: identity,
+  validateResponse: res => res.status >= 200 && res.status < 300,
   enableRetry: false,
   retryTimes: 1,
   timeout: 0,
@@ -262,7 +271,7 @@ const neverPromise = new Promise(() => {})
 export class ApiSharp {
   private readonly options: ApiSharpOptions
   private readonly httpClient: IHttpClient
-  private readonly cache: ICache<Promise<IResponse<any>>>
+  private readonly cache: ICache<Promise<IResponse>>
 
   constructor(options: ApiSharpOptions = {}) {
     this.options = options
@@ -315,10 +324,12 @@ export class ApiSharp {
 
     let res: IResponse<T>
 
+    // 获取请求结果
     try {
-      // 发起请求
       res = await Promise.race([requestPromise, timeoutPromise])
     } catch (err) {
+      // 处理请求异常情况
+
       // 请求失败或超时，都会抛出异常并被捕获处理
 
       // 请求失败时删除缓存
@@ -333,28 +344,34 @@ export class ApiSharp {
       }
     }
 
-    // 检查请求结果，并对失败情况做处理
-    const checkResult = this.checkResponseData(res.data)
-    if (!checkResult.success) {
+    // 处理请求返回情况
+    const result = api.validateResponse(res)
+    if (result !== true) {
+      // 请求失败时重置对应缓存
       if (api.enableCache) {
         this.cache.delete(cachedKey)
       }
+      // 失败重试
       if (api.enableRetry && api.retryTimes >= 1) {
         return this.request({ ...api, retryTimes: api.retryTimes - 1 })
       } else {
         this.logResponseError(api, res.data)
-        throw new Error(checkResult.errMsg)
+        throw (result instanceof Error ? result : new Error(res.statusText))
       }
     }
 
+    // 打印原始数据
     if (hitCache) {
       this.logResponseCache(api, res.data)
     } else {
       this.logResponse(api, res.data)
     }
 
+    // 转换后的数据
+    const transformedData = api.transformResponse(res.data)
+
     return {
-      data: api.transformResponse(res.data),
+      data: transformedData,
       from: hitCache ? "cache" : "network",
       api,
       status: res.status,
