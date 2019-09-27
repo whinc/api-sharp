@@ -22,7 +22,8 @@ module.exports = (req, res, next) => {
   }
   // 回显请求体
   if (req.path === "/echo/body") {
-    res.end(req.body)
+    console.log("body", req.body)
+    res.end(typeof req.body === "string" ? req.body : JSON.stringify(req.body))
     return
   }
   next()

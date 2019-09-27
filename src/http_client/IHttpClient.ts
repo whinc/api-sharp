@@ -1,3 +1,5 @@
+import { ProcessedApiDescriptor } from "ApiSharp"
+
 export type HttpMethod = "get" | "GET" | "post" | "POST"
 // | 'delete'
 // | 'DELETE'
@@ -14,36 +16,14 @@ export type HttpHeader = { [key: string]: string }
 
 export type QueryType = object | null
 export type BodyType = object | null
+export type ResponseType = "text" | "json"
 
 /**
  * 请求参数接口
  *
  * 由具体平台实现该接口，尽量保持接口精简，减少针对平台的实现成本
  */
-export interface IRequest {
-  /**
-   * 接口请求地址，是一个绝对路径
-   *
-   * 例如：`"http://xyz.com?a=b"`
-   */
-  url: string
-  /**
-   * 请求方法
-   */
-  method: HttpMethod
-  /**
-   * 请求数据
-   *
-   * 仅当请求方法为`"POST"`时有效
-   */
-  body: BodyType
-  /**
-   * HTTP 请求头
-   *
-   * 例如：`{"Content-Type": "application/json"}`
-   */
-  headers: HttpHeader
-}
+export type IRequest = Pick<ProcessedApiDescriptor, "url" | "method" | "body" | "headers" | "responseType">
 
 export interface IResponse<T> {
   /**

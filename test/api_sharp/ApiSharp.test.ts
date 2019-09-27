@@ -1,11 +1,11 @@
 import axios from "axios"
 import PropTypes from "prop-types"
 import { ApiSharp, defaultOptions, ApiSharpOptions, ApiDescriptor, ProcessedApiDescriptor } from "../../src/ApiSharp"
-import { WebXhrClient, HttpMethod } from "../../src/http_client"
-import { identity } from "../../src/utils"
+import { WebXhrClient, WebAxiosClient, HttpMethod } from "../../src/http_client"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
 const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
+const _apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebAxiosClient() })
 
 const baseURL = "http://localhost:4000"
 
@@ -68,59 +68,39 @@ afterAll(async () => {
   await clearDB()
 })
 
-describe("测试 new ApiSharp(options) 全局配置", () => {
-  test("当 ApiSharp.request() 和 new ApiSharp() 均未指定配置项时，则使用默认配置项", () => {
+describe("测试 new ApiSharp(options) 配置", () => {
+  test("配置项未出现在 ApiSharp.request() 和 new ApiSharp() 中时，使用默认配置项", () => {
     const api = { url: "http://anything" }
     const apiSharp: any = new ApiSharp()
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
-    expect(_api.baseURL).toBe(defaultOptions.baseURL)
-    expect(_api.method).toBe(defaultOptions.method)
-    expect(_api.headers).toEqual(defaultOptions.headers)
-    // expect(_api.transformRequest).toBe(defaultConfig.transformRequest)
-    expect(_api.transformResponse).toBe(defaultOptions.transformResponse)
-    expect(_api.enableCache).toBe(defaultOptions.enableCache)
-    expect(_api.cacheTime).toBe(defaultOptions.cacheTime)
-    expect(_api.enableRetry).toBe(defaultOptions.enableRetry)
-    expect(_api.retryTimes).toBe(defaultOptions.retryTimes)
-    expect(_api.timeout).toBe(defaultOptions.timeout)
-    expect(_api.enableLog).toBe(defaultOptions.enableLog)
-    expect(_api.formatLog).toBe(defaultOptions.formatLog)
+    const ignoreKeys = ["url"]
+    Object.keys(_api)
+      .filter(key => !ignoreKeys.includes(key))
+      .forEach(key => {
+        expect(_api[key]).toEqual(defaultOptions[key])
+      })
   })
 
-  test("当 ApiSharp.request() 中未指定配置项，但 new ApiSharp() 中指定了时，则使用 new ApiSharp() 中的配置，", () => {
+  test("配置项出现在 ApiSharp.request()，但出现在 new ApiSharp() 中时，使用 new ApiSharp() 配置项", () => {
     const api = { url: "http://anything" }
-    const options: ApiSharpOptions = {
-      baseURL: "x",
-      method: "get",
-      headers: {
-        a: "a"
-      },
-      transformResponse: v => v,
-      enableCache: true,
-      cacheTime: 9999,
-      enableRetry: true,
-      retryTimes: 9999,
-      timeout: 999,
-      enableLog: true,
-      formatLog: identity
-    }
+    const options: ApiSharpOptions = defaultOptions
     const apiSharp: any = new ApiSharp(options)
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
-    expect(_api.baseURL).toBe(options.baseURL)
-    expect(_api.method).toBe(options.method!.toUpperCase())
-    expect(_api.headers).toEqual({ ...defaultOptions.headers, ...options.headers })
-    // expect(_api.transformRequest).toBe(options.transformRequest)
-    expect(_api.transformResponse).toBe(options.transformResponse)
-    expect(_api.enableCache).toBe(options.enableCache)
-    expect(_api.cacheTime).toBe(options.cacheTime)
-    expect(_api.enableRetry).toBe(options.enableRetry)
-    expect(_api.retryTimes).toBe(options.retryTimes)
-    expect(_api.timeout).toBe(options.timeout)
-    expect(_api.enableLog).toBe(options.enableLog)
-    expect(_api.formatLog).toEqual(options.formatLog)
+    const ignoreKeys = ["url"]
+    Object.keys(_api)
+      .filter(key => !ignoreKeys.includes(key))
+      .forEach(key => {
+        try {
+          expect(_api[key]).toEqual(options[key])
+        } catch (err) {
+          console.error("出错配置项：" + key)
+          throw err
+        }
+      })
   })
-  test("当 ApiSharp.request() 和 new ApiSharp() 中均指定了时，部分配置项进行合并", () => {
+  test("配置项同时出现在 ApiSharp.request() 和 new ApiSharp() 中时，使用 ApiSharp.request() 配置，同时部分配置项进行合并", () => {
     const api: ApiDescriptor = {
+      ...defaultOptions,
       url: "http://anything",
       headers: {
         a: "a"
@@ -133,6 +113,18 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     }
     const apiSharp = new ApiSharp(options)
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
+    const ignoreKeys = ["headers"]
+    Object.keys(_api)
+      .filter(key => !ignoreKeys.includes(key))
+      .forEach(key => {
+        try {
+          expect(_api[key]).toEqual(api[key])
+        } catch (err) {
+          console.error("出错配置项：" + key)
+          throw err
+        }
+      })
+    // 合并配置项
     expect(_api.headers).toEqual({
       ...defaultOptions.headers,
       ...options.headers,
@@ -297,7 +289,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     })
   })
 
-  describe("测试请求参数转换", () => {
+  describe("测试 api.transformRequest", () => {
     test("传入数字类型参数，转换成字符串类型后，实际接收的参数是字符串类型", () => {
       const id = 10
       const api: ApiDescriptor = {
@@ -315,6 +307,24 @@ describe("测试 ApiSharp.processApi() 方法", () => {
       expect(_api.body).toEqual({ id: String(id) })
     })
   })
+
+  describe("测试 api.responseType", () => {
+    test("默认值是 json", () => {
+      const api: ApiDescriptor = { url: baseURL }
+      const _api = apiSharp.processApi(api)
+      expect(_api.responseType).toBe("json")
+    })
+    test("指定值是 json", () => {
+      const api: ApiDescriptor = { url: baseURL, responseType: "json" }
+      const _api = apiSharp.processApi(api)
+      expect(_api.responseType).toBe("json")
+    })
+    test("指定值是 text", () => {
+      const api: ApiDescriptor = { url: baseURL, responseType: "text" }
+      const _api = apiSharp.processApi(api)
+      expect(_api.responseType).toBe("text")
+    })
+  })
 })
 
 describe("测试 ApiSharp.request()", () => {
@@ -324,7 +334,7 @@ describe("测试 ApiSharp.request()", () => {
     // 清除缓存
     apiSharp.clearCache()
   })
-  describe("测试 HTTP 请求方法", () => {
+  describe("测试 method", () => {
     test("POST 请求正常", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
@@ -338,7 +348,7 @@ describe("测试 ApiSharp.request()", () => {
       expect(response1.data).toEqual(response2.data)
     })
   })
-  describe("测试缓存", () => {
+  describe("测试 cacheTime", () => {
     test("POST 请求不会被缓存，当开启或开闭缓存时", async () => {
       const api = {
         baseURL,
@@ -449,7 +459,7 @@ describe("测试 ApiSharp.request()", () => {
       expect(secondResponse.from).toBe("network")
     })
   })
-  describe("测试数据mock", () => {
+  describe("测试 mockData", () => {
     test("返回mock数据，当开启mock", async () => {
       const data = "hello"
       const api = {
@@ -483,7 +493,7 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
 
-  describe("测试失败重试", () => {
+  describe("测试 retryTimes", () => {
     // test("请求失败不会重试，当关闭重试时", async () => {
     //   // 构造一个不存在的地址，触发请求失败
     //   const api = {
@@ -512,26 +522,7 @@ describe("测试 ApiSharp.request()", () => {
     // })
   })
 
-  describe("测试 HTTP 请求头", () => {
-    // test("设置请求头后，实际发出的 HTTP 请求带有该请求头", async () => {
-    //   const headerKey = "test-header"
-    //   const headerValue = "hello"
-    //   const newPost = mockOnePost()
-    //   const response = await apiSharp.request({
-    //     baseURL,
-    //     url: "/posts",
-    //     method: "POST",
-    //     headers: {
-    //       [headerKey]: headerValue
-    //     },
-    //     params: newPost
-    //   })
-    //   // 由于浏览器限制，部分 HTTP 头部是不能通过 js 获取的，为了方便测试服务端将HTTP头信息放到body 里面
-    //   expect(response.data).toEqual({[headerKey]: headerValue})
-    // })
-  })
-
-  describe("测试打印日志", () => {
+  describe("测试 formatLog", () => {
     test("不打印日志，当关闭日志时", async () => {
       const { getArgsAndUnwrap } = wrapConsole("log")
       try {
@@ -583,7 +574,7 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
 
-  describe("测试响应数据转换", () => {
+  describe("测试 transformResponse", () => {
     test("返回数据是对象，转换后数字后，实际调用返回的应该是这个数字", async () => {
       const newPost = mockOnePost()
       const response = await apiSharp.request({
@@ -596,7 +587,7 @@ describe("测试 ApiSharp.request()", () => {
       expect(response.data.extra).toEqual(100)
     })
   })
-  describe("测试接口超时", () => {
+  describe("测试 timeout", () => {
     test("接口请求未超时，不抛出异常", async () => {
       const newPost = mockOnePost()
       expect.assertions(0)
@@ -641,6 +632,93 @@ describe("测试 ApiSharp.request()", () => {
       } catch (err) {
         expect(err.message).toMatch("请求超时")
       }
+    })
+  })
+
+  describe("测试 responseType", () => {
+    test("请求 json 数据且指定 responseType 为 json 时返回JS对象", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/date/json",
+        responseType: "json"
+      })
+      expect(res.data).toHaveProperty("server_date")
+    })
+    test("请求 json 数据且指定 responseType 为 text 时返回字符串", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/date/json",
+        responseType: "text"
+      })
+      expect(res.data).toMatch("server_date")
+    })
+    test("请求 text 数据且指定 responseType 为 text 时返回字符串", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/date/text",
+        responseType: "text"
+      })
+      expect(res.data).toMatch("server_date")
+    })
+    test("请求 text 数据且指定 responseType 为 json 时返回null", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/date/text",
+        responseType: "json"
+      })
+      expect(res.data).toBeNull()
+    })
+  })
+  describe("测试 headers", () => {
+    test("测试默认请求头", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/echo/headers"
+      })
+      expect(res.data["content-type"]).toBe(defaultOptions.headers["Content-Type"])
+    })
+    test("测试指定请求头", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/echo/headers",
+        headers: {
+          "Content-Type": "text/plain"
+        }
+      })
+      expect(res.data["content-type"]).toBe("text/plain")
+    })
+  })
+  describe("测试 search", () => {
+    test("查询参数正确传到服务端", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/echo/query",
+        query: {
+          a: 1,
+          b: 2
+        }
+      })
+      expect(res.data).toEqual({
+        a: "1",
+        b: "2"
+      })
+    })
+  })
+  describe("测试 body", () => {
+    test("请求数据正确传到服务端", async () => {
+      const res = await apiSharp.request({
+        baseURL,
+        url: "/echo/body",
+        method: "post",
+        body: {
+          a: 1,
+          b: 2
+        }
+      })
+      expect(res.data).toEqual({
+        a: 1,
+        b: 2
+      })
     })
   })
 })

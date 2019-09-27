@@ -58,7 +58,12 @@
   },
   "jest": {
     "globals": {
-      "__DEV__": true
+      "__DEV__": true,
+      "ts-jest": {
+        "diagnostics": {
+          "warnOnly": true
+        }
+      }
     },
     "testMatch": [
       "<rootDir>/test/api_sharp/*.test.ts"

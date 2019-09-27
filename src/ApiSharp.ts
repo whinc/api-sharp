@@ -1,7 +1,16 @@
 import { Validator, checkPropTypes } from "prop-types"
 import { isString, getSortedString, identity, invariant, warning, isPlainObject } from "./utils"
 import { ICache, ExpireCache } from "./cache"
-import { WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader, BodyType, QueryType } from "./http_client"
+import {
+  WebXhrClient,
+  IHttpClient,
+  IResponse,
+  HttpMethod,
+  HttpHeader,
+  BodyType,
+  QueryType,
+  ResponseType
+} from "./http_client"
 import { formatFullUrl } from "./utils"
 
 const removeUndefinedValue = target => {
@@ -94,16 +103,22 @@ interface CommonApiDescriptor {
    */
   bodyPropTypes?: { [key: string]: Validator<any> } | null
   /**
-   * 转换请求体中的数据
+   * 响应的数据类型
+   *
+   * 支持类型如下：
+   *
+   * `"text"`：返回字符串
+   * `"json"`：返回`JSON.parse()`后的结果，如果解析失败返回`null`
+   *
+   * 默认`"json"`
+   */
+  responseType?: ResponseType
+  /**
+   * 转换请求数据
    */
   transformRequest?: (body: BodyType, headers: Object) => any
   /**
    * 转换响应数据
-   *
-   * 接收 HTTP 响应 -> data(返回数据) -> transformResponse(数据转换) -> 用户接收结果
-   *
-   * 例如：`(data) => ({...data, errMsg: 'errCode: ' + data.errCode})`
-   *
    */
   transformResponse?: (data: any) => any
   /**
@@ -194,12 +209,6 @@ export interface ApiSharpOptions extends Partial<ApiDescriptor> {
   cache?: ICache<Promise<IResponse<any>>>
 }
 
-export class ApiSharpRequestError extends Error {
-  constructor(message?: string, public api?: ProcessedApiDescriptor) {
-    super(message)
-  }
-}
-
 const configMap = {
   [LogType.Request]: { text: "Request", bgColor: "rgba(0, 116, 217, 0.69)", fgColor: "#0074D9" },
   [LogType.Response]: { text: "Response", bgColor: "rgba(61, 153, 112, 0.69)", fgColor: "#3D9970" },
@@ -224,6 +233,7 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   enableMock: false,
   mockData: undefined,
   method: "GET",
+  responseType: "json",
   enableCache: false,
   cacheTime: 5 * 1000,
   transformRequest: identity,
@@ -247,7 +257,7 @@ export const defaultOptions: Required<ApiSharpOptions> = {
 }
 
 // 永不 resolve 或 reject 的 Promise
-const nerverPromise = new Promise(() => {})
+const neverPromise = new Promise(() => {})
 
 export class ApiSharp {
   private readonly options: ApiSharpOptions
@@ -280,7 +290,7 @@ export class ApiSharp {
     let hitCache = false
 
     // 构造一个超时时自动 reject 的 Promise
-    let timeoutPromise: Promise<IResponse<T>> = nerverPromise as Promise<IResponse<T>>
+    let timeoutPromise: Promise<IResponse<T>> = neverPromise as Promise<IResponse<T>>
     if (api.timeout > 0) {
       timeoutPromise = new Promise((_resolve, reject) => {
         const error = new Error(`请求超时(${api.timeout}ms)`)
@@ -319,7 +329,7 @@ export class ApiSharp {
         return this.request({ ...api, retryTimes: api.retryTimes - 1 })
       } else {
         this.logResponseError(err, api)
-        throw new ApiSharpRequestError(err.message, api)
+        throw err
       }
     }
 
@@ -333,7 +343,7 @@ export class ApiSharp {
         return this.request({ ...api, retryTimes: api.retryTimes - 1 })
       } else {
         this.logResponseError(api, res.data)
-        throw new ApiSharpRequestError(checkResult.errMsg, api)
+        throw new Error(checkResult.errMsg)
       }
     }
 
@@ -366,7 +376,8 @@ export class ApiSharp {
       url: fullUrl,
       method: api.method,
       headers: api.headers,
-      body: api.method === "POST" ? api.body : null
+      body: api.method === "POST" ? api.body : null,
+      responseType: api.responseType
     })
   }
 
@@ -443,13 +454,13 @@ export class ApiSharp {
     return _api
   }
 
-  protected checkResponseData(data: any): { success: boolean; errMsg?: string } {
+  protected checkResponseData(_data: any): { success: boolean; errMsg?: string } {
     // return {
     //   success: false,
     //   errMsg: ''
     // }
     return {
-      success: !!data
+      success: true
     }
   }
 

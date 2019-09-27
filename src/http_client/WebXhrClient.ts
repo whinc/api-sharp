@@ -1,5 +1,5 @@
 import { formatResponseHeaders, isPlainObject, serializeSearch, isFormData } from "../utils"
-import IHttpClient, {IResponse, IRequest} from "./IHttpClient"
+import IHttpClient, { IResponse, IRequest } from "./IHttpClient"
 
 export interface WebXhrRequest extends IRequest {
   withCredentials?: boolean
@@ -7,7 +7,7 @@ export interface WebXhrRequest extends IRequest {
 
 export default class WebXhrClient implements IHttpClient {
   request<T>(options: WebXhrRequest): Promise<IResponse<T>> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       // 暂存返回数据
       let _response: IResponse<T>
       const xhr = new XMLHttpRequest()
@@ -21,17 +21,17 @@ export default class WebXhrClient implements IHttpClient {
       if (options.method === "POST") {
         if (isPlainObject(options.body)) {
           // 如果是纯 JS 对象，则依据 Content-Type 序列化成字符串
-          const contentType = options.headers['Content-Type']
+          const contentType = options.headers["Content-Type"]
           if (contentType === "application/json") {
             body = JSON.stringify(options.body)
-          } else if (contentType === 'application/x-www-form-urlencoded') {
+          } else if (contentType === "application/x-www-form-urlencoded") {
             body = serializeSearch(options.body)
           } else {
             body = String(options.body)
           }
         } else if (isFormData(options.body)) {
           // 如果是表单，让浏览器设置请求 Content-Type
-          delete options.headers['Content-Type']
+          delete options.headers["Content-Type"]
           body = options.body
         } else {
           // 其他情况透传
@@ -48,31 +48,27 @@ export default class WebXhrClient implements IHttpClient {
        * 例如：请求超时后，先触发 readystatechange 事件，后触发 timeout 事件，如果在 readystatechange 监听函数中处理返回
        * 则 timeout 错误就无法返回了，因为 Promise 只能被填充一次。
        */
-      xhr.onloadend = function () {
-        resolve(_response)
-      }
+      // xhr.onloadend = function () {
+      //   resolve(_response)
+      // }
 
-      // 设置响应数据类型（只支持 JSON）
-      xhr.responseType = "text"
+      // 设置响应数据类型
+      xhr.responseType = options.responseType
       xhr.onreadystatechange = function() {
         if (this.readyState === XMLHttpRequest.DONE) {
-          const headers = formatResponseHeaders(this.getAllResponseHeaders())
-          const response = {
-            data: this.response,
-            status: this.status,
-            statusText: this.statusText,
-            headers
+          if (this.status >= 200 && this.status < 300) {
+            const headers = formatResponseHeaders(this.getAllResponseHeaders())
+            const response = {
+              data: this.response,
+              status: this.status,
+              statusText: this.statusText,
+              headers
+            }
+            _response = response
+            resolve(_response)
+          } else {
+            reject(new Error(this.statusText))
           }
-          if (!this.response && this.responseText) {
-            response.data = this.responseText
-          }
-          // // try parse json
-          try {
-            response.data = JSON.parse(response.data)
-          } catch (err) {
-            // do nothing
-          }
-          _response = response
         }
       }
       xhr.send(body)
