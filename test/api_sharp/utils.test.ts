@@ -9,15 +9,24 @@ describe("测试工具类", () => {
     query = { a: "中国" }
     expect(encodeQuery(query)).toBe("a=" + encodeURIComponent(query.a))
   })
+})
 
-  test("formatFullUrl()", () => {
-    let baseURL = "a"
-    let url = 'b'
-    let query: Object | undefined = {c: 1}
-    expect(formatFullUrl(baseURL, url, query)).toBe(`${baseURL}${url}?c=1`)
-    query = undefined
-    expect(formatFullUrl(baseURL, url, query)).toBe(`${baseURL}${url}`)
+describe("测试 formatFullUrl", () => {
+  test("拼接基准地址&相对地址", () => {
+    let baseURL = "http://test.com"
+    let url = "/a"
+    expect(formatFullUrl(baseURL, url)).toBe(`${baseURL}${url}`)
   })
-
-  // test("sera")
+  test("拼接基准地址&相对地址&查询参数", () => {
+    let baseURL = "http://test.com"
+    let url = "/a"
+    let query = { c: 1 }
+    expect(formatFullUrl(baseURL, url, query)).toBe(`${baseURL}${url}?c=1`)
+  })
+  test("拼接基准地址&相对地址(带查询串)&查询参数", () => {
+    let baseURL = "http://test.com"
+    let url = "/a?b=1"
+    let query = { c: 2 }
+    expect(formatFullUrl(baseURL, url, query)).toBe(`${baseURL}/a?b=1&c=2`)
+  })
 })
