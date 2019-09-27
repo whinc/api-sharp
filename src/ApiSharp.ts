@@ -1,10 +1,10 @@
 import { Validator, checkPropTypes } from "prop-types"
 import { isString, getSortedString, identity, invariant, warning, isPlainObject } from "./utils"
 import { ICache, ExpireCache } from "./cache"
-import { WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader, BodyType, SearchType } from "./http_client"
+import { WebXhrClient, IHttpClient, IResponse, HttpMethod, HttpHeader, BodyType, QueryType } from "./http_client"
 import { formatFullUrl } from "./utils"
 
-const removeUndefinedValue = (target) => {
+const removeUndefinedValue = target => {
   return Object.keys(target)
     .filter(key => target[key] !== undefined)
     .reduce((obj, key) => Object.assign(obj, { [key]: target[key] }), {})
@@ -48,7 +48,7 @@ interface CommonApiDescriptor {
   method?: HttpMethod
   /**
    * HTTP 请求头
-   * 
+   *
    * 如果设置了全局 headers，接口中的 headers 将于全局 headers 合并，且接口中的 header 优先级更高
    *
    * 默认`{"Content-Type": "application/json"}`
@@ -67,15 +67,15 @@ interface CommonApiDescriptor {
    *
    * 例如：`{a: 1, b: 2}`会转换成`"a=1&b=2"`
    */
-  search?: SearchType
+  query?: QueryType
   /**
    * 请求 URL 中的查询参数类型
    *
-   * 仅当 search 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
+   * 仅当 query 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  searchPropTypes?: { [key: string]: Validator<any> } | null
+  queryPropTypes?: { [key: string]: Validator<any> } | null
   /**
    * 请求体中的数据
    *
@@ -215,10 +215,10 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   headers: {
     "Content-Type": "application/json"
   },
-  url: '',
-  description: '',
-  search: null,
-  searchPropTypes: null,
+  url: "",
+  description: "",
+  query: null,
+  queryPropTypes: null,
   body: null,
   bodyPropTypes: null,
   enableMock: false,
@@ -361,7 +361,7 @@ export class ApiSharp {
   }
 
   private sendRequest<T>(api: ProcessedApiDescriptor): Promise<IResponse<T>> {
-    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.search : null)
+    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.query : null)
     return this.httpClient.request<T>({
       url: fullUrl,
       method: api.method,
@@ -371,10 +371,14 @@ export class ApiSharp {
   }
 
   private generateCachedKey(api: ApiDescriptor) {
-    return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.search)}`
+    return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.query)}`
   }
 
-  private mergeApi (api: ApiDescriptor, options: ApiSharpOptions, defaultOptions: Required<ApiSharpOptions>): ProcessedApiDescriptor {
+  private mergeApi(
+    api: ApiDescriptor,
+    options: ApiSharpOptions,
+    defaultOptions: Required<ApiSharpOptions>
+  ): ProcessedApiDescriptor {
     const { httpClient, cache, ..._defaultOptions } = defaultOptions
     const _options = removeUndefinedValue(options) as ApiSharpOptions
     const _api = removeUndefinedValue(api) as Required<ApiSharpOptions>
@@ -400,7 +404,7 @@ export class ApiSharp {
       api = { url: api }
     }
 
-    const _api =  this.mergeApi(api, this.options, defaultOptions)
+    const _api = this.mergeApi(api, this.options, defaultOptions)
     invariant(_api.url && isString(_api.url), "url 为空")
 
     _api.baseURL = _api.baseURL.replace(/\/+$/, "")
@@ -415,15 +419,15 @@ export class ApiSharp {
 
     _api.timeout = Math.ceil(Math.max(_api.timeout, 0))
 
-    const _search = _api.search
+    const _query = _api.query
     // 类型检查
     if (__DEV__) {
-      if (isPlainObject(_search) && isPlainObject(_api.searchPropTypes)) {
+      if (isPlainObject(_query) && isPlainObject(_api.queryPropTypes)) {
         const name = _api.baseURL + _api.url
-        checkPropTypes(_api.searchPropTypes, _search, "", name)
+        checkPropTypes(_api.queryPropTypes, _query, "", name)
       }
     }
-    _api.search = _search
+    _api.query = _query
 
     // 转换请求体中的数据
     const _body = _api.transformRequest.call(null, _api.body, _api.headers)

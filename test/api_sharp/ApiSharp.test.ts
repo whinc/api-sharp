@@ -108,7 +108,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
     expect(_api.baseURL).toBe(options.baseURL)
     expect(_api.method).toBe(options.method!.toUpperCase())
-    expect(_api.headers).toEqual({...defaultOptions.headers, ...options.headers})
+    expect(_api.headers).toEqual({ ...defaultOptions.headers, ...options.headers })
     // expect(_api.transformRequest).toBe(options.transformRequest)
     expect(_api.transformResponse).toBe(options.transformResponse)
     expect(_api.enableCache).toBe(options.enableCache)
@@ -123,7 +123,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     const api: ApiDescriptor = {
       url: "http://anything",
       headers: {
-        a: 'a'
+        a: "a"
       }
     }
     const options: ApiSharpOptions = {
@@ -136,7 +136,7 @@ describe("测试 new ApiSharp(options) 全局配置", () => {
     expect(_api.headers).toEqual({
       ...defaultOptions.headers,
       ...options.headers,
-      ...api.headers,
+      ...api.headers
     })
   })
 })
@@ -232,7 +232,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
   describe("测试 api.search", () => {
     const api: ApiDescriptor = { url: baseURL }
     test("api.search 默认为 null", () => {
-      expect(apiSharp.processApi(api).search).toBeNull()
+      expect(apiSharp.processApi(api).query).toBeNull()
     })
   })
 
@@ -246,13 +246,13 @@ describe("测试 ApiSharp.processApi() 方法", () => {
   // 参考： https://github.com/facebook/prop-types/blob/master/factoryWithTypeCheckers.js
   describe("测试 api.searchPropTypes", () => {
     test("测试必填参数", () => {
-      const {getArgsAndUnwrap} = wrapConsole('error')
+      const { getArgsAndUnwrap } = wrapConsole("error")
       const api: ApiDescriptor = {
         url: baseURL,
-        searchPropTypes: {
+        queryPropTypes: {
           id: PropTypes.number.isRequired
         },
-        search: {}
+        query: {}
       }
       const _api = apiSharp.processApi(api)
       const location = ""
@@ -272,7 +272,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
 
   describe("测试 api.bodyPropTypes", () => {
     test("测试必填参数", () => {
-      const {getArgsAndUnwrap} = wrapConsole('error')
+      const { getArgsAndUnwrap } = wrapConsole("error")
       const api: ApiDescriptor = {
         url: baseURL,
         method: "post",
@@ -407,12 +407,12 @@ describe("测试 ApiSharp.request()", () => {
         baseURL,
         url: "/posts/",
         enableCache: true,
-        search: {
+        query: {
           id: response.data.id
         }
       }
       const firstResponse = await apiSharp.request(api)
-      const secondResponse = await apiSharp.request({ ...api, search: { id: response.data.id + 1 } })
+      const secondResponse = await apiSharp.request({ ...api, query: { id: response.data.id + 1 } })
       expect(firstResponse.from).toBe("network")
       expect(secondResponse.from).toBe("network")
     })
@@ -533,7 +533,7 @@ describe("测试 ApiSharp.request()", () => {
 
   describe("测试打印日志", () => {
     test("不打印日志，当关闭日志时", async () => {
-      const {getArgsAndUnwrap} = wrapConsole('log')
+      const { getArgsAndUnwrap } = wrapConsole("log")
       try {
         const api = {
           baseURL,
@@ -549,7 +549,7 @@ describe("测试 ApiSharp.request()", () => {
       expect(getArgsAndUnwrap()).toBeNull()
     })
     test("打印日志，当开启日志时", async () => {
-      const {getArgsAndUnwrap} = wrapConsole('log')
+      const { getArgsAndUnwrap } = wrapConsole("log")
       try {
         const api = {
           baseURL,
@@ -565,7 +565,7 @@ describe("测试 ApiSharp.request()", () => {
       expect(getArgsAndUnwrap()).toBeInstanceOf(Array)
     })
     test("按自定义格式打印日志，当开启日志并设置了自定义格式化方法时", async () => {
-      const {getArgsAndUnwrap} = wrapConsole('log')
+      const { getArgsAndUnwrap } = wrapConsole("log")
       try {
         const api = {
           baseURL,

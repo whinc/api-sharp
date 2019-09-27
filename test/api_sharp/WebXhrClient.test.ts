@@ -51,7 +51,7 @@ describe("测试 XMLHttpRequest 请求", () => {
     const res = await apiSharp.request({
       baseURL,
       url: "/echo/query",
-      search: {
+      query: {
         a: 1,
         b: 2
       }

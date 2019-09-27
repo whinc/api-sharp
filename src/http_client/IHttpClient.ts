@@ -12,7 +12,7 @@ export type HttpMethod = "get" | "GET" | "post" | "POST"
 
 export type HttpHeader = { [key: string]: string }
 
-export type SearchType = object | null
+export type QueryType = object | null
 export type BodyType = object | null
 
 /**
