@@ -1,5 +1,5 @@
 import ICache from "./ICache"
-import { isNumber } from 'util'
+import { isNumber } from '../utils'
 
 interface StorageCacheItem<T = any> {
   data: T

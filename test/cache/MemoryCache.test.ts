@@ -3,6 +3,7 @@ import {MemoryCache} from '../../src/cache'
 const memoryCache = new MemoryCache()
 const key = "testKey"
 const value = "testValue"
+const longTimeout = 1 * 60 * 60 * 1000
 
 beforeEach(() => {
   // 清除存储
@@ -19,18 +20,18 @@ describe("测试 new MemoryCache()", () => {
 
 describe("测试数据存取", () => {
   test("存入后，取出数据与存入相同", ()=> {
-    memoryCache.set(key, value, Infinity)
+    memoryCache.set(key, value, longTimeout)
     const _value = memoryCache.get(key)
     expect(value).toEqual(_value)
   })
   test("存入后删除，取出为空", ()=> {
-    memoryCache.set(key, value, Infinity)
+    memoryCache.set(key, value, longTimeout)
     memoryCache.delete(key)
     const _value = memoryCache.get(key)
     expect(_value).toBeUndefined()
   })
   test("存入后清空，取出为空", ()=> {
-    memoryCache.set(key, value, Infinity)
+    memoryCache.set(key, value, longTimeout)
     memoryCache.clear()
     const _value = memoryCache.get(key)
     expect(_value).toBeUndefined()
