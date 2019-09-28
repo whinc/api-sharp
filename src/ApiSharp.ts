@@ -120,7 +120,7 @@ interface CommonApiDescriptor {
   /**
    * 检查响应数据是否有效
    * 
-   * 检查函数返回 true 表示成功，返回 false 表示失败。也可以返回一个 Error 对象来表示失败，同时携带相关错误信息。
+   * 检查函数返回 true 表示成功，返回 false 表示失败（失败信息为 HTTP 状态码描述)，返回 Error 也表示失败（失败信息为 Error 中的错误消息）
    * 
    * 默认：`(res) => res.status >= 200 && res.status < 300`
    */

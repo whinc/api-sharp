@@ -15,18 +15,20 @@
 ## 特性
 
 - 浏览器使用 [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest) 请求
-- node.js 使用 [http](https://nodejs.org/api/http.html) 模块请求（TODO）
-- 支持自定义请求实现（可扩展支持更多环境，如 React Native、小程序等环境）
-- 支持 [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) 接口
-- 完善的 [TypeScript](http://www.typescriptlang.org/docs/home.html) 类型
-- 转换请求和响应数据
+- node.js 使用 [http](https://nodejs.org/api/http.html) 请求（TODO）
+- 支持自定义 HTTP 客户端实现，可扩展到更多 JS 运行时环境（如 React Native、小程序等）
+- 转换请求响应数据
 - 自动解析 JSON 数据
 - 设置请求超时
-- 请求数据类型运行时校验（基于[prop-types](https://github.com/facebook/prop-types)，仅开发环境检查，不影响 production 构建包的大小和性能）
+- 运行时请求数据类型检查
 - 缓存接口数据
 - 模拟接口数据
 - 失败自动重试
 - 自定义日志
+- 支持 [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) 接口
+- 支持 [TypeScript](http://www.typescriptlang.org/docs/home.html) 
+
+>运行时类型检查基于[prop-types](https://github.com/facebook/prop-types)，仅在开发环境下会进行检查，不影响 production 环境构建包的大小和性能
 
 ![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
 --- | --- | --- | --- | --- | --- |
@@ -73,7 +75,7 @@ const response = await apiSharp.request({ url: "/json/server_date" })
 const response = await apiSharp.request({
   url: "/json/server_date",
   method: "POST",
-  params: {
+  body: {
     format: "json"
   }
 })
@@ -102,10 +104,10 @@ import PropTypes from "prop-types"
 
 const response = await apiSharp.request({
   url: "/json/server_date",
-  paramsType: {
+  queryPropTypes: {
     name: PropTypes.string.isRequired
   },
-  params: {
+  query: {
     name: "jim"
   }
 })
@@ -154,141 +156,166 @@ export type ApiDescriptor = CommonApiDescriptor & WebXhrApiDescriptor
 interface CommonApiDescriptor {
   /**
    * 请求地址
-   * 
+   *
    * 支持相对地址（如`"/a/b/c"`）和绝对地址（如`"http://xyz.com/a/b/c"`）
    */
   url: string
   /**
    * 基地址
-   * 
+   *
    * 默认`""`
-   * 
+   *
    * 例如：`'http://xyz.com'`, `'http://xyz.com/a/b'`
    */
   baseURL?: string
   /**
    * HTTP 请求方法
-   * 
+   *
    * 支持 `"GET" | "POST"`
-   * 
+   *
    * 默认`"GET"`
    */
   method?: HttpMethod
   /**
    * HTTP 请求头
-   * 
-   * 默认`{}`
-   * 
-   * 例如：`{"Content-Type": "application/json"}`
+   *
+   * 如果设置了全局 headers，接口中的 headers 将于全局 headers 合并，且接口中的 header 优先级更高
+   *
+   * 默认`{"Content-Type": "application/json"}`
    */
   headers?: HttpHeader
   /**
    * 接口描述
-   * 
+   *
    * 默认`""`
    */
-  description?: string | ReturnTypeFn<string>
+  description?: string
   /**
-   * 请求参数
-   * 
-   * 最终发送给服务器的数据是 string 类型，数据转换规则如下：
-   * - 对于 GET 请求，数据转换成 query string（encodeURIComponent(k)=encodeURIComponent(v)&encodeURIComponent(k)=encodeURIComponent(v)...）
-   * - 对于 POST 请求，会对数据进行 JSON 序列化
-   * 
-   * 例如：`{id: 100}`
+   * 请求 URL 中的查询参数
+   *
+   * 对象会转换成 URL 查询字符串并拼接在 URL 后面，转换规则：encodeURIComponent(k1)=encodeURIComponent(v1)&encodeURIComponent(k2)=encodeURIComponent(v2)...
+   *
+   * 例如：`{a: 1, b: 2}`会转换成`"a=1&b=2"`
    */
-  params?: Params
+  query?: QueryType
   /**
-   * 请求参数类型
-   * 
-   * 支持 PropType 类型，类型不符时控制台输出错误提示（但不影响接口继续请求），仅在`process.env.NODE_ENV !== 'production'`时有效，生产环境不会引入 prop-types 包
-   * 
+   * 请求 URL 中的查询参数类型
+   *
+   * 仅当 query 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
+   *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  paramsType?: ParamsType
+  queryPropTypes?: { [key: string]: Validator<any> } | null
   /**
-   * 转换请求参数
-   * 
-   * 用户发起调用 -> params(原始参数) -> transformRequest(参数转换) -> paramsType(类型校验) -> 发出 HTTP 请求
-   * 
-   * 例如：`(params) => ({...params, name: 'abc'})`
+   * 请求体中的数据
+   *
+   * 仅支持 POST 请求，数据会转换成字符串传输，转换规则由请求头`Content-Type`决定：
+   * 请求头包含`Content-Type: application/json`时，数据序列化为 JSON 字符串
+   *
+   * 例如：`{a: 1, b: 2}`
    */
-  transformRequest?: Transformer<Params>
+  body?: BodyType
+  /**
+   * 传入的`body`的数据类型
+   *
+   * 仅当 body 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行类型检查，类型检查时机发生在使用`transformRequest`进行数据转换之前
+   *
+   * 例如：`{ id: PropTypes.number.isRequired }`
+   */
+  bodyPropTypes?: { [key: string]: Validator<any> } | null
+  /**
+   * 响应的数据类型
+   *
+   * 支持类型如下：
+   *
+   * `"text"`：返回字符串
+   * `"json"`：返回`JSON.parse()`后的结果，如果解析失败返回`null`
+   *
+   * 默认`"json"`
+   */
+  responseType?: ResponseType
+  /**
+   * 转换请求数据
+   */
+  transformRequest?: (body: BodyType, headers: Object) => any
+  /**
+   * 检查响应数据是否有效
+   * 
+   * 检查函数返回 true 表示成功，返回 false 表示失败（失败信息为 HTTP 状态码描述)，返回 Error 也表示失败（失败信息为 Error 中的错误消息）
+   * 
+   * 默认：`(res) => res.status >= 200 && res.status < 300`
+   */
+  validateResponse?: (res: IResponse) => boolean | Error
   /**
    * 转换响应数据
-   * 
-   * 接收 HTTP 响应 -> data(返回数据) -> transformResponse(数据转换) -> 用户接收结果
-   * 
-   * 例如：`(data) => ({...data, errMsg: 'errCode: ' + data.errCode})`
-   *
    */
-  transformResponse?: Transformer<any>
+  transformResponse?: (data: any) => any
   /**
    * 开启缓存
-   * 
+   *
    * 并发请求相同接口且参数相同时，实际只会发出一个请求，因为缓存的是请求的 Promise
-   * 
+   *
    * 默认`false`
    */
-  enableCache?: boolean | ReturnTypeFn<boolean>
+  enableCache?: boolean
   /**
    * 缓存持续时间，单位毫秒
-   * 
+   *
    * 下次取缓存时，如果缓存已存在的的时间超过该值，则对应缓存失效
-   * 
-   * 默认 `5*60*1000`ms 
+   *
+   * 默认 `5*60*1000`ms
    */
-  cacheTime?: number | ReturnTypeFn<number>
+  cacheTime?: number
   /**
    * 开启接口数据模拟
-   * 
+   *
    * 默认`false`
    */
-  enableMock?: boolean | ReturnTypeFn<boolean>
+  enableMock?: boolean
   /**
    * 模拟的接口数据
-   * 
+   *
    * 默认`undefined`
-   * 
+   *
    * 例如：`{id: 1, name: 'jim'}`
    */
-  mockData?: any | ReturnTypeFn<any>
+  mockData?: any
   /**
    * 开启失败重试
-   * 
+   *
    * 默认`false`
    */
-  enableRetry?: boolean | ReturnTypeFn<boolean>
+  enableRetry?: boolean
   /**
    * 重试最大次数
-   * 
+   *
    * 默认`1`
    */
-  retryTimes?: number | ReturnTypeFn<number>
+  retryTimes?: number
   /**
    * 接口超时时间，单位毫秒
-   * 
+   *
    * 从发出请求起，如果 timeout 毫秒后接口未返回，接口调用失败。
-   * 
+   *
    * 默认`60*1000`ms
    */
   timeout?: number
   /**
    * 开启控制台日志
-   * 
+   *
    * 默认为`process.env.NODE_ENV !== "production"`
    */
-  enableLog?: boolean | ReturnTypeFn<boolean>
+  enableLog?: boolean
   /**
    * 格式化日志
    */
-  logFormatter?: LogFormatter
+  formatLog?: (type: LogType, api: ProcessedApiDescriptor, data?: any) => void
 }
 
 interface WebXhrApiDescriptor {
   /**
    * 跨域请求时是否带上用户信息（如Cookie和认证的HTTP头）
-   * 
+   *
    * 默认`false`
    */
   withCredentials?: boolean
