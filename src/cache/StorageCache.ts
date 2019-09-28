@@ -66,8 +66,8 @@ export default class StorageCache<V> implements ICache<V> {
       if (__DEV__) {
         console.error(err)
       }
-      return value
     }
+    return value
   }
   delete(key: string): boolean {
     this.storage.removeItem(key)
