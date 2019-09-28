@@ -67,6 +67,15 @@ export default class WebXhrClient implements IHttpClient {
           resolve(_response)
         }
       }
+      xhr.onabort = function () {
+        reject(new Error("Connection is aborted"))
+      }
+      xhr.ontimeout = function () {
+        reject(new Error("Connection timeout"))
+      }
+      xhr.onerror = function () {
+        reject(new Error('Network error'))
+      }
       xhr.send(body)
     })
   }

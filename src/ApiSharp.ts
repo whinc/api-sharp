@@ -1,6 +1,6 @@
 import { Validator, checkPropTypes } from "prop-types"
 import { isString, getSortedString, identity, invariant, warning, isPlainObject } from "./utils"
-import { ICache, ExpireCache } from "./cache"
+import { ICache, MemoryCache } from "./cache"
 import {
   WebXhrClient,
   IHttpClient,
@@ -132,7 +132,7 @@ interface CommonApiDescriptor {
   /**
    * 开启缓存
    *
-   * 并发请求相同接口且参数相同时，实际只会发出一个请求，因为缓存的是请求的 Promise
+   * 开启后，优先返回缓存，如果无可用缓存则请求网络，并缓存返回结果
    *
    * 默认`false`
    */
@@ -140,7 +140,7 @@ interface CommonApiDescriptor {
   /**
    * 缓存持续时间，单位毫秒
    *
-   * 下次取缓存时，如果缓存已存在的的时间超过该值，则对应缓存失效
+   * 本次网络请求结果缓存的时间，仅当 enableCache 为 true 时有效
    *
    * 默认 `5*60*1000`ms
    */
@@ -214,7 +214,7 @@ export enum LogType {
  */
 export interface ApiSharpOptions extends Partial<ApiDescriptor> {
   httpClient?: IHttpClient
-  cache?: ICache<Promise<IResponse>>
+  cache?: ICache<IResponse>
 }
 
 const configMap = {
@@ -226,7 +226,7 @@ const configMap = {
 
 export const defaultOptions: Required<ApiSharpOptions> = {
   httpClient: new WebXhrClient(),
-  cache: new ExpireCache<Promise<IResponse>>(),
+  cache: new MemoryCache<IResponse>(),
   withCredentials: false,
   baseURL: "",
   headers: {
@@ -243,7 +243,7 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   method: "GET",
   responseType: "json",
   enableCache: false,
-  cacheTime: 5 * 1000,
+  cacheTime: 5 * 60 * 1000,
   transformRequest: identity,
   transformResponse: identity,
   validateResponse: res => res.status >= 200 && res.status < 300,
@@ -271,7 +271,7 @@ const neverPromise = new Promise(() => {})
 export class ApiSharp {
   private readonly options: ApiSharpOptions
   private readonly httpClient: IHttpClient
-  private readonly cache: ICache<Promise<IResponse>>
+  private readonly cache: ICache<IResponse>
 
   constructor(options: ApiSharpOptions = {}) {
     this.options = options
@@ -311,12 +311,11 @@ export class ApiSharp {
     if (api.enableCache) {
       cachedKey = this.generateCachedKey(api)
       if (this.cache.has(cachedKey)) {
-        requestPromise = this.cache.get(cachedKey)!
+        const cachedRes = this.cache.get(cachedKey)!
+        requestPromise = Promise.resolve(cachedRes)
         hitCache = true
       } else {
         requestPromise = this.sendRequest<T>(api)
-        hitCache = false
-        this.cache.set(cachedKey, requestPromise, { timeout: api.cacheTime })
       }
     } else {
       requestPromise = this.sendRequest<T>(api)
@@ -333,7 +332,7 @@ export class ApiSharp {
       // 请求失败或超时，都会抛出异常并被捕获处理
 
       // 请求失败时删除缓存
-      if (api.enableCache) {
+      if (api.enableCache && cachedKey) {
         this.cache.delete(cachedKey)
       }
       if (api.enableRetry && api.retryTimes >= 1) {
@@ -346,9 +345,14 @@ export class ApiSharp {
 
     // 处理请求返回情况
     const result = api.validateResponse(res)
-    if (result !== true) {
-      // 请求失败时重置对应缓存
-      if (api.enableCache) {
+    if (result === true) {
+      // 请求成功，缓存结果（如果本次结果来自缓存，则不更新缓存，避免缓存期无限延长）
+      if (api.enableCache && cachedKey && !hitCache) {
+        this.cache.set(cachedKey, res, api.cacheTime)
+      }
+    } else {
+      // 请求失败，重置缓存
+      if (api.enableCache && cachedKey) {
         this.cache.delete(cachedKey)
       }
       // 失败重试

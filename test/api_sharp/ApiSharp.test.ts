@@ -9,6 +9,10 @@ const _apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebAxiosClien
 
 const baseURL = "http://localhost:4000"
 
+// 等待一会
+const sleep = (ms = 10) => new Promise(resolve => setTimeout(resolve, 10))
+
+// 清除 db.json 数据
 async function clearDB() {
   const response = await axios.request({
     method: "GET",
@@ -24,6 +28,7 @@ async function clearDB() {
   }
 }
 
+// 向 db.json 插入一条数据
 async function requestPostPost(newPost) {
   return apiSharp.request({
     baseURL,
@@ -33,6 +38,7 @@ async function requestPostPost(newPost) {
   })
 }
 
+// 向 db.json 查询数据
 async function requestGetPost(id) {
   const data = await apiSharp.request({
     baseURL,
@@ -44,11 +50,12 @@ async function requestGetPost(id) {
   return data
 }
 
+// mock 一条数据
 function mockOnePost() {
   return { title: "post", author: "jack", date: Date.now() }
 }
 
-// 包裹console方法，并返回获取最近输出参数的方法，该方法调用后还原console方法
+// 拦截 console 方法，用于获取 console 输出
 function wrapConsole(method) {
   let _args: null | any[] = null
   const originMethod = console[method]
@@ -67,9 +74,11 @@ function wrapConsole(method) {
 beforeEach(() => {
   // 重置告警缓存（默认输出过一次的告警会被缓存，第二次出现重复告警时不会打印，导致依赖打印的测试失效）
   PropTypes.resetWarningCache()
+  // 清除 ApiSharp 缓存，避免影响后续测试单元
+  apiSharp.clearCache()
 })
 
-afterAll(async () => {
+afterEach(async () => {
   await clearDB()
 })
 
@@ -370,7 +379,7 @@ describe("测试 ApiSharp.request()", () => {
     })
   })
   describe("测试 cacheTime", () => {
-    test("POST 请求不会被缓存，当开启或开闭缓存时", async () => {
+    test("开启缓存时，POST 请求不会命中缓存", async () => {
       const api = {
         baseURL,
         url: "/posts/",
@@ -383,7 +392,7 @@ describe("测试 ApiSharp.request()", () => {
       const secondResponse = await apiSharp.request({ ...api, enableCache: false })
       expect(secondResponse.from).toBe("network")
     })
-    test("GET 请求不会被缓存，当关闭缓存时", async () => {
+    test("关闭缓存时，GET 请求不会命中缓存", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
       const api = {
@@ -399,7 +408,7 @@ describe("测试 ApiSharp.request()", () => {
       expect(firstResponse.from).toBe("network")
       expect(secondResponse.from).toBe("network")
     })
-    test("GET 请求会被缓存，当开启缓存且请求的地址和参数相同时", async () => {
+    test("开启缓存时，如果请求地址和参数相同，GET 请求命中缓存", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
       const api = {
@@ -415,7 +424,7 @@ describe("测试 ApiSharp.request()", () => {
       expect(firstResponse.from).toBe("network")
       expect(secondResponse.from).toBe("cache")
     })
-    test("GET 请求不会被缓存，当开启缓存且请求的地址不同时", async () => {
+    test("开启缓存时，如果请求地址和参数不相同，GET 请求不会命中缓存", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
       const api = {
@@ -431,52 +440,36 @@ describe("测试 ApiSharp.request()", () => {
       expect(firstResponse.from).toBe("network")
       expect(secondResponse.from).toBe("network")
     })
-    test("GET 请求不会被缓存，当开启缓存且请求的参数不同时", async () => {
+    test("当开启缓存时，如果缓存未过期，GET 请求命中缓存", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
-      const api: ApiDescriptor = {
+      const api = {
         baseURL,
         url: "/posts/",
         enableCache: true,
+        cacheTime: Infinity,
         query: {
           id: response.data.id
         }
       }
       const firstResponse = await apiSharp.request(api)
-      const secondResponse = await apiSharp.request({ ...api, query: { id: response.data.id + 1 } })
-      expect(firstResponse.from).toBe("network")
-      expect(secondResponse.from).toBe("network")
-    })
-    test("GET 请求命中缓存，当开启缓存并且在缓存期内", async () => {
-      const newPost = mockOnePost()
-      const response = await requestPostPost(newPost)
-      const api = {
-        baseURL,
-        url: "/posts/",
-        enableCache: true,
-        params: {
-          id: response.data.id
-        }
-      }
-      const firstResponse = await apiSharp.request({ ...api, cacheTime: Infinity })
       expect(firstResponse.from).toBe("network")
       const secondResponse = await apiSharp.request(api)
       expect(secondResponse.from).toBe("cache")
     })
-    test("GET 请求不命中缓存，当开启缓存并且超出缓存期", async () => {
+    test("当开启缓存时，如果缓存已过期，GET 请求不会命中缓存", async () => {
       const newPost = mockOnePost()
       const response = await requestPostPost(newPost)
       const api = {
         baseURL,
-        url: "/posts/",
-        enableCache: true,
-        params: {
+        url: "/posts/?name=whinc",
+        query: {
           id: response.data.id
         }
       }
-      const firstResponse = await apiSharp.request({ ...api, cacheTime: 0 })
+      const firstResponse = await apiSharp.request({ ...api, enableCache: true, cacheTime: 0 })
       expect(firstResponse.from).toBe("network")
-      const secondResponse = await apiSharp.request(api)
+      const secondResponse = await apiSharp.request({...api, enableCache: true})
       expect(secondResponse.from).toBe("network")
     })
   })
