@@ -61,14 +61,25 @@ const apiSharp = new ApiSharp({...})
 发送 GET 请求
 ```js
 // 请求服务器时间
-apiSharp.request({ url: "/json/server_date" }).then(response => {
-  console.log(response)
-}, err => {
-  console.error(response)
-})
-
-// 使用 async/await
 const response = await apiSharp.request({ url: "/json/server_date" })
+console.log(response)
+// {
+//   "data": {
+//     "timestamp": 1569685733048
+//   },
+//   "from": "network",
+//   "api": {
+//     "url": "/json/server_date",
+//     "method": "GET",
+//     ...
+//   },
+//   "status": 200,
+//   "statusText": "OK",
+//   "headers": {
+//     "content-type": "application/json",
+//     "content-length": "27"
+//   }
+// }
 ```
 
 发送 POST 请求
@@ -98,7 +109,6 @@ expect(response1.data).toEqual(response2.data)
 ```
 
 开启参数类型校验
-
 ```js
 // 引入 prop-types
 import PropTypes from "prop-types"
