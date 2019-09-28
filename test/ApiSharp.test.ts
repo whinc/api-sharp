@@ -1,7 +1,7 @@
 import axios from "axios"
 import PropTypes from "prop-types"
-import { ApiSharp, defaultOptions, ApiSharpOptions, ApiDescriptor, ProcessedApiDescriptor } from "../../src/ApiSharp"
-import { WebXhrClient, WebAxiosClient, HttpMethod } from "../../src/http_client"
+import { ApiSharp, defaultOptions, ApiSharpOptions, ApiDescriptor, ProcessedApiDescriptor } from "../src/ApiSharp"
+import { WebXhrClient, WebAxiosClient, HttpMethod } from "../src/http_client"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
 const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })

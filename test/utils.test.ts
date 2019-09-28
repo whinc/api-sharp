@@ -1,4 +1,4 @@
-import { encodeQuery, formatFullUrl } from "../../src/utils"
+import { encodeQuery, formatFullUrl } from "../src/utils"
 
 describe("测试工具类", () => {
   test("编码查询字符串", () => {

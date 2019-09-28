@@ -1,3 +1,3 @@
 export { ApiSharp } from "./ApiSharp"
-export { WebAxiosClient, WebXhrClient} from "./http_client"
-
+export {IHttpClient, WebXhrClient} from "./http_client"
+export {ICache, MemoryCache, StorageCache, StorageType} from './cache'
