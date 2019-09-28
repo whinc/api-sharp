@@ -1,3 +1,11 @@
+## [1.5.1](https://github.com/whinc/api-sharp/compare/v1.5.0...v1.5.1) (2019-09-28)
+
+
+### Bug Fixes
+
+* 修复测试用例bug ([21efeee](https://github.com/whinc/api-sharp/commit/21efeee))
+* 修复语法错误 ([b906cca](https://github.com/whinc/api-sharp/commit/b906cca))
+
 # [1.5.0](https://github.com/whinc/api-sharp/compare/v1.4.0...v1.5.0) (2019-09-28)
 
 
