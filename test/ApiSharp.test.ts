@@ -185,6 +185,9 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     test('api.method === "post" 时使用 "POST" 方法', () => {
       expect(apiSharp.processApi({ ...api, method: "post" }).method).toBe("POST")
     })
+    test('api.method === "options" 时使用 "OPTIONS" 方法', () => {
+      expect(apiSharp.processApi({ ...api, method: "options" }).method).toBe("OPTIONS")
+    })
   })
 
   test("测试 api.description 取值", () => {
