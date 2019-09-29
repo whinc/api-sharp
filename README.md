@@ -4,6 +4,7 @@
 <p>
 
 [![npm](https://img.shields.io/npm/v/api-sharp)](https://www.npmjs.com/package/api-sharp) ![](https://img.shields.io/bundlephobia/minzip/api-sharp) ![](https://img.shields.io/npm/dt/api-sharp) [![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)](https://circleci.com/dashboard)
+
 </p>
 
 <p>
@@ -27,27 +28,31 @@
 - 失败自动重试
 - 自定义日志
 - 支持 [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) 接口
-- 支持 [TypeScript](http://www.typescriptlang.org/docs/home.html) 
+- 支持 [TypeScript](http://www.typescriptlang.org/docs/home.html)
 
->运行时类型检查基于[prop-types](https://github.com/facebook/prop-types)，仅在开发环境下会进行检查，不影响 production 环境构建包的大小和性能
+> 运行时类型检查基于[prop-types](https://github.com/facebook/prop-types)，仅在开发环境下会进行检查，不影响 production 环境构建包的大小和性能
 
-![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
---- | --- | --- | --- | --- | --- |
-Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 11 ✔ |
+| ![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Latest ✔                                                                                 | Latest ✔                                                                                    | Latest ✔                                                                                 | Latest ✔                                                                              | Latest ✔                                                                           | 11 ✔                                                                                                                         |
 
 ## 安装
 
 使用 npm 安装
+
 ```bash
 $ npm install api-sharp
 ```
 
 使用 yarn 安装
+
 ```bash
 $ yarn add api-sharp
 ```
 
 ## 示例
+
+[![Edit api-sharp demo](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/api-sharp-demo-rw1n3?expanddevtools=1&fontsize=14&module=%2Fsrc%2Findex.js)
 
 创建 ApiSharp 实例
 
@@ -59,6 +64,7 @@ const apiSharp = new ApiSharp({...})
 ```
 
 发送 GET 请求
+
 ```js
 // 请求服务器时间
 const response = await apiSharp.request({ url: "/json/server_date" })
@@ -83,6 +89,7 @@ console.log(response)
 ```
 
 发送 POST 请求
+
 ```js
 const response = await apiSharp.request({
   url: "/json/server_date",
@@ -109,6 +116,7 @@ expect(response1.data).toEqual(response2.data)
 ```
 
 开启参数类型校验
+
 ```js
 // 引入 prop-types
 import PropTypes from "prop-types"
@@ -146,13 +154,10 @@ const response = await apiSharp.request({
 })
 ```
 
-在线示例
-
-[![Edit api-sharp demo](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/api-sharp-demo-rw1n3?expanddevtools=1&fontsize=14&module=%2Fsrc%2Findex.js)
-
 ## api-sharp API
 
 `ApiSharp`实例方法
+
 ```typescript
 class ApiSharp {
   request(url: string): Promise<IResponse>
@@ -161,6 +166,7 @@ class ApiSharp {
 ```
 
 请求方法支持的接口配置项
+
 ```typescript
 export type ApiDescriptor = CommonApiDescriptor & WebXhrApiDescriptor
 
@@ -251,9 +257,9 @@ interface CommonApiDescriptor {
   transformRequest?: (body: BodyType, headers: Object) => any
   /**
    * 检查响应数据是否有效
-   * 
+   *
    * 检查函数返回 true 表示成功，返回 false 表示失败（失败信息为 HTTP 状态码描述)，返回 Error 也表示失败（失败信息为 Error 中的错误消息）
-   * 
+   *
    * 默认：`(res) => res.status >= 200 && res.status < 300`
    */
   validateResponse?: (res: IResponse) => boolean | Error
@@ -334,6 +340,7 @@ interface WebXhrApiDescriptor {
 ```
 
 请求返回的数据结构
+
 ```typescript
 export interface IResponse<T = any> {
   // HTTP 响应状态码
