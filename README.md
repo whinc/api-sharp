@@ -8,7 +8,7 @@
 </p>
 
 <p>
-基于 Promise 的跨平台的 HTTP 客户端。
+可自定义的、基于配置的、跨平台的 javascript HTTP 客户端。
 </p>
 
 </div>
