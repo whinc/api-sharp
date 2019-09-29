@@ -11,12 +11,12 @@ jobs:
       - run:
           name: install
           command: npm install
-      # - run:
-      #     name: start server
-      #     command: npm run pm2:server
-      # - run:
-      #     name: produce test coverage
-      #     command: npm run coverage
+      - run:
+          name: start server
+          command: npm run pm2:server
+      - run:
+          name: produce test coverage
+          command: npm run coverage
       - run:
           name: build
           command: npm run build
