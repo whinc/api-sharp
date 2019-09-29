@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/whinc/api-sharp/compare/v1.5.2...v1.5.3) (2019-09-29)
+
+
+### Bug Fixes
+
+* 修复控制台错误 ([93840ce](https://github.com/whinc/api-sharp/commit/93840ce))
+
 ## [1.5.2](https://github.com/whinc/api-sharp/compare/v1.5.1...v1.5.2) (2019-09-29)
 
 
