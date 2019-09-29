@@ -1,6 +1,6 @@
 module.exports = {
   presets: [
-    ["@babel/preset-env", { targets: { browsers: "> 5% or last 2 versions" }, useBuiltIns: "usage" }],
+    ["@babel/preset-env", { targets: { chrome: "48", ie: "11", node: 8 }, useBuiltIns: "usage", corejs: 3 }],
     "@babel/preset-typescript"
   ],
   plugins: [["@babel/plugin-proposal-class-properties", { loose: true }]]

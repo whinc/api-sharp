@@ -1,4 +1,4 @@
-import { Validator, checkPropTypes } from "prop-types"
+import * as PropTypes from "./PropTypes"
 import { isString, getSortedString, identity, invariant, warning, isPlainObject } from "./utils"
 import { ICache, MemoryCache } from "./cache"
 import {
@@ -84,7 +84,7 @@ interface CommonApiDescriptor {
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  queryPropTypes?: { [key: string]: Validator<any> } | null
+  queryPropTypes?: { [key: string]: PropTypes.Validator } | null
   /**
    * 请求体中的数据
    *
@@ -101,7 +101,7 @@ interface CommonApiDescriptor {
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  bodyPropTypes?: { [key: string]: Validator<any> } | null
+  bodyPropTypes?: { [key: string]: PropTypes.Validator } | null
   /**
    * 响应的数据类型
    *
@@ -119,9 +119,9 @@ interface CommonApiDescriptor {
   transformRequest?: (body: BodyType, headers: Object) => any
   /**
    * 检查响应数据是否有效
-   * 
+   *
    * 检查函数返回 true 表示成功，返回 false 表示失败（失败信息为 HTTP 状态码描述)，返回 Error 也表示失败（失败信息为 Error 中的错误消息）
-   * 
+   *
    * 默认：`(res) => res.status >= 200 && res.status < 300`
    */
   validateResponse?: (res: IResponse) => boolean | Error
@@ -360,7 +360,7 @@ export class ApiSharp {
         return this.request({ ...api, retryTimes: api.retryTimes - 1 })
       } else {
         this.logResponseError(api, res.data)
-        throw (result instanceof Error ? result : new Error(res.statusText))
+        throw result instanceof Error ? result : new Error(res.statusText)
       }
     }
 
@@ -456,7 +456,7 @@ export class ApiSharp {
     if (__DEV__) {
       if (isPlainObject(_query) && isPlainObject(_api.queryPropTypes)) {
         const name = _api.baseURL + _api.url
-        checkPropTypes(_api.queryPropTypes, _query, "", name)
+        PropTypes.checkPropTypes(_api.queryPropTypes, _query, "", name)
       }
     }
     _api.query = _query
@@ -466,7 +466,7 @@ export class ApiSharp {
     if (__DEV__) {
       if (isPlainObject(_body) && isPlainObject(_api.bodyPropTypes)) {
         const name = _api.baseURL + _api.url
-        checkPropTypes(_api.bodyPropTypes, _body, "", name)
+        PropTypes.checkPropTypes(_api.bodyPropTypes, _body, "", name)
       }
     }
     // 转换请求数据

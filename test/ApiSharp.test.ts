@@ -1,16 +1,15 @@
 import axios from "axios"
 import PropTypes from "prop-types"
 import { ApiSharp, defaultOptions, ApiSharpOptions, ApiDescriptor, ProcessedApiDescriptor } from "../src/ApiSharp"
-import { WebXhrClient, WebAxiosClient, HttpMethod } from "../src/http_client"
+import { WebXhrClient, HttpMethod } from "../src/http_client"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
 const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
-const _apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebAxiosClient() })
 
 const baseURL = "http://localhost:4000"
 
 // 等待一会
-const sleep = (ms = 10) => new Promise(resolve => setTimeout(resolve, 10))
+const sleep = (timeout = 10) => new Promise(resolve => setTimeout(resolve, timeout))
 
 // 清除 db.json 数据
 async function clearDB() {
@@ -331,7 +330,7 @@ describe("测试 ApiSharp.processApi() 方法", () => {
         },
         transformRequest: (body: any) => ({ ...body, name: "jack" })
       }
-      const {getArgsAndUnwrap} = wrapConsole("error")
+      const { getArgsAndUnwrap } = wrapConsole("error")
       const _api = apiSharp.processApi(api)
       expect(getArgsAndUnwrap()).not.toBeNull()
       expect(_api.body).toEqual({ id: 10, name: "jack" })
@@ -469,7 +468,7 @@ describe("测试 ApiSharp.request()", () => {
       }
       const firstResponse = await apiSharp.request({ ...api, enableCache: true, cacheTime: 0 })
       expect(firstResponse.from).toBe("network")
-      const secondResponse = await apiSharp.request({...api, enableCache: true})
+      const secondResponse = await apiSharp.request({ ...api, enableCache: true })
       expect(secondResponse.from).toBe("network")
     })
   })
@@ -625,7 +624,7 @@ describe("测试 ApiSharp.request()", () => {
           validateResponse: res => res.status >= 200 && res.status < 300 && res.data === Symbol()
         })
       } catch (err) {
-        expect(err.message).toBe('Created')
+        expect(err.message).toBe("Created")
       }
     })
     test("检查函数返回 Error 对象时，抛出异常，错误对象为返回的 Error 对象", async () => {
@@ -639,7 +638,7 @@ describe("测试 ApiSharp.request()", () => {
           method: "POST",
           body: newPost,
           // 这里使用 Symbol 比较必定返回 false
-          validateResponse: res => res.status >= 200 && res.status < 300 && res.data === Symbol() ? true : _err
+          validateResponse: res => (res.status >= 200 && res.status < 300 && res.data === Symbol() ? true : _err)
         })
       } catch (err) {
         expect(err).toBe(_err)
