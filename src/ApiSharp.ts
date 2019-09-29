@@ -19,6 +19,8 @@ const removeUndefinedValue = target => {
     .reduce((obj, key) => Object.assign(obj, { [key]: target[key] }), {})
 }
 
+const httpMethodRegExp = /GET|POST|DELETE|HEAD|OPTIONS|PUT|PATCH/i
+
 export interface ApiResponse<T> extends IResponse<T> {
   /**
    * 请求接口描述符
@@ -50,7 +52,7 @@ interface CommonApiDescriptor {
   /**
    * HTTP 请求方法
    *
-   * 支持 `"GET" | "POST"`
+   * 支持 `GET|POST|DELETE|HEAD|OPTIONS|PUT|PATCH`
    *
    * 默认`"GET"`
    */
@@ -441,7 +443,7 @@ export class ApiSharp {
 
     _api.baseURL = _api.baseURL.replace(/\/+$/, "")
 
-    invariant(/get|post/i.test(_api.method), `method 期望值为 get|post 其一，实际值为"${_api.method}"`)
+    invariant(httpMethodRegExp.test(_api.method), `无效的 HTTP 方法："${_api.method}"`)
     _api.method = _api.method.toUpperCase() as HttpMethod
 
     warning(

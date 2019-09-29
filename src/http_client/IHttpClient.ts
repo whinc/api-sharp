@@ -1,16 +1,20 @@
 import { ProcessedApiDescriptor } from "ApiSharp"
 
-export type HttpMethod = "get" | "GET" | "post" | "POST"
-// | 'delete'
-// | 'DELETE'
-// | 'head'
-// | 'HEAD'
-// | 'options'
-// | 'OPTIONS'
-// | 'put'
-// | 'PUT'
-// | 'patch'
-// | 'PATCH'
+export type HttpMethod =
+  | "get"
+  | "GET"
+  | "post"
+  | "POST"
+  | "delete"
+  | "DELETE"
+  | "head"
+  | "HEAD"
+  | "options"
+  | "OPTIONS"
+  | "put"
+  | "PUT"
+  | "patch"
+  | "PATCH"
 
 export type HttpHeader = { [key: string]: string }
 
