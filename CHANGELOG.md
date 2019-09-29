@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/whinc/api-sharp/compare/v1.5.1...v1.5.2) (2019-09-29)
+
+
+### Bug Fixes
+
+* 修复babel配置错误 ([c4867f9](https://github.com/whinc/api-sharp/commit/c4867f9))
+
 ## [1.5.1](https://github.com/whinc/api-sharp/compare/v1.5.0...v1.5.1) (2019-09-28)
 
 
