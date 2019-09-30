@@ -362,6 +362,7 @@ export class ApiSharp {
         return this.request({ ...api, retryTimes: api.retryTimes - 1 })
       } else {
         this.logResponseError(api, res.data)
+        // __DEV__ && console.error(res)
         throw result instanceof Error ? result : new Error(res.statusText)
       }
     }
