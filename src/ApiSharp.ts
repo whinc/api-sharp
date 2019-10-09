@@ -275,9 +275,6 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   }
 }
 
-// 永不 resolve 或 reject 的 Promise
-const neverPromise = new Promise(() => {})
-
 export class ApiSharp {
   private readonly options: ApiSharpOptions
   private readonly httpClient: IHttpClient
