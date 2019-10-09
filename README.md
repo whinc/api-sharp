@@ -22,14 +22,14 @@
 - 支持设置请求超时
 - 支持参数类型检查
 - 支持缓存（内存缓存、持久化存储缓存、自定义缓存）
-- 支持接口mock
+- 支持接口 mock
 - 支持失败重试
 - 支持自定义日志
 - 支持 [TypeScript](http://www.typescriptlang.org/docs/home.html)
-- 支持跨平台（浏览器、node.js、小程序、ReactNative、Weex等）
+- 支持跨平台（浏览器、node.js、小程序、ReactNative、Weex 等）
   - 自定义底层 HTTP 引擎（可适配所有 JS 运行时环境）
   - 浏览器使用 [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest) 请求
-  - node.js 使用 [http](https://nodejs.org/api/http.html) 请求（开发中）
+  - node.js 使用 [http](https://nodejs.org/api/http.html) 请求
   - 即将到来...（更多平台将会内置支持，不支持的可自行实现，扩展非常简单）
 
 > 类型检查基于[prop-types](https://github.com/facebook/prop-types)，仅在开发环境下会进行检查，production 环境会移除该依赖，不会影响 production 环境构建包的大小和性能。

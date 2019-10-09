@@ -22,12 +22,13 @@ export type QueryType = object | null
 export type BodyType = object | null
 export type ResponseType = "text" | "json"
 
+type RequestFields = "url" | "method" | "body" | "headers" | "timeout" | "responseType"
 /**
  * 请求参数接口
  *
  * 由具体平台实现该接口，尽量保持接口精简，减少针对平台的实现成本
  */
-export type IRequest = Pick<ProcessedApiDescriptor, "url" | "method" | "body" | "headers" | "responseType">
+export type IRequest = Pick<ProcessedApiDescriptor, RequestFields>
 
 export interface IResponse<T = any> {
   /**

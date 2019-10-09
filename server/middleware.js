@@ -5,25 +5,22 @@
 module.exports = (req, res, next) => {
   if (req.path === "/date/json") {
     res.json({ server_date: Date.now() })
-    return
   } else if (req.path === "/date/text") {
     res.end(`server_date:` + Date.now())
-    return
-  }
-  // 回显请求头
-  if (req.path === "/echo/headers") {
+  } else if (req.path === "/delay") {
+    setTimeout(() => {
+      res.json(req.query)
+    }, req.query.delay || 0)
+  } else if (req.path === "/echo/headers") {
+    // 回显请求头
     res.json(req.headers)
-    return
-  }
-  // 回显 URL 查询参数
-  if (req.path === "/echo/query") {
+  } else if (req.path === "/echo/query") {
+    // 回显 URL 查询参数
     res.json(req.query)
-    return
-  }
-  // 回显请求体
-  if (req.path === "/echo/body") {
+  } else if (req.path === "/echo/body") {
+    // 回显请求体
     res.end(typeof req.body === "string" ? req.body : JSON.stringify(req.body))
-    return
+  } else {
+    next()
   }
-  next()
 }

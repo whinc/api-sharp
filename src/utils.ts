@@ -144,3 +144,9 @@ export function serializeSearch(search: object): string {
 
   return parts.join("&")
 }
+
+export const stringTable = {
+  TIMEOUT: "Connection timeout",
+  ABORT: "Connection is aborted",
+  NETWORK_ERROR: "Network error"
+}

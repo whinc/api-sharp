@@ -1,7 +1,14 @@
 import axios from "axios"
 import PropTypes from "prop-types"
-import { ApiSharp, defaultOptions, ApiSharpOptions, ApiDescriptor, ProcessedApiDescriptor } from "../src/ApiSharp"
-import { WebXhrClient, HttpMethod, NodeHttpClient} from "../src/http_client"
+import {
+  ApiSharp,
+  defaultOptions,
+  ApiSharpOptions,
+  ApiDescriptor,
+  ProcessedApiDescriptor
+} from "../src/ApiSharp"
+import { WebXhrClient, HttpMethod, NodeHttpClient } from "../src/http_client"
+import { stringTable } from "../src/utils"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
 // const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
@@ -642,7 +649,8 @@ describe("测试 ApiSharp.request()", () => {
           method: "POST",
           body: newPost,
           // 这里使用 Symbol 比较必定返回 false
-          validateResponse: res => (res.status >= 200 && res.status < 300 && res.data === Symbol() ? true : _err)
+          validateResponse: res =>
+            res.status >= 200 && res.status < 300 && res.data === Symbol() ? true : _err
         })
       } catch (err) {
         expect(err).toBe(_err)
@@ -684,15 +692,16 @@ describe("测试 ApiSharp.request()", () => {
       const newPost = mockOnePost()
       expect.assertions(1)
       try {
-        await apiSharp.request({
+        const res = await apiSharp.request({
           baseURL,
-          url: "/posts",
-          method: "POST",
-          body: newPost,
+          url: "/delay",
+          query: {
+            delay: 10
+          },
           timeout: 1
         })
       } catch (err) {
-        expect(err.message).toMatch("请求超时")
+        expect(err.message).toMatch(stringTable.TIMEOUT)
       }
     })
   })
