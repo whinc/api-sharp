@@ -8,29 +8,31 @@
 </p>
 
 <p>
-可自定义的、基于配置的、跨平台的 javascript HTTP 客户端。
+适用于JavaScript的跨平台，基于配置的轻量级HTTP客户端。
 </p>
 
 </div>
 
 ## 特性
 
-- 浏览器使用 [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest) 请求
-- node.js 使用 [http](https://nodejs.org/api/http.html) 请求（TODO）
-- 支持自定义 HTTP 客户端实现，可扩展到更多 JS 运行时环境（如 React Native、小程序等）
-- 转换请求响应数据
-- 自动解析 JSON 数据
-- 设置请求超时
-- 运行时请求数据类型检查
-- 缓存接口数据
-- 支持自定义缓存（内存缓存、持久化存储缓存等）
-- 模拟接口数据
-- 失败自动重试
-- 自定义日志
-- 支持 [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) 接口
+- 基于 [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
+- 支持自定义 HTTP 引擎，可扩展到更多 JS 运行时环境（如 React Native、小程序等）
+- 支持数据转换
+- 支持自动解析 JSON
+- 支持设置请求超时
+- 支持参数类型检查
+- 支持缓存（内存缓存、持久化存储缓存、自定义缓存）
+- 支持接口mock
+- 支持失败重试
+- 支持自定义日志
 - 支持 [TypeScript](http://www.typescriptlang.org/docs/home.html)
+- 支持跨平台（浏览器、node.js、小程序、ReactNative、Weex等）
+  - 自定义底层 HTTP 引擎（可适配所有 JS 运行时环境）
+  - 浏览器使用 [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest) 请求
+  - node.js 使用 [http](https://nodejs.org/api/http.html) 请求（开发中）
+  - 即将到来...（更多平台将会内置支持，不支持的可自行实现，扩展非常简单）
 
-> 运行时类型检查基于[prop-types](https://github.com/facebook/prop-types)，仅在开发环境下会进行检查，不影响 production 环境构建包的大小和性能
+> 类型检查基于[prop-types](https://github.com/facebook/prop-types)，仅在开发环境下会进行检查，production 环境会移除该依赖，不会影响 production 环境构建包的大小和性能。
 
 | ![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
