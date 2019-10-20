@@ -222,8 +222,16 @@ export interface ApiSharpOptions extends Partial<ApiDescriptor> {
 const configMap = {
   [LogType.Request]: { text: "Request", bgColor: "rgba(0, 116, 217, 0.69)", fgColor: "#0074D9" },
   [LogType.Response]: { text: "Response", bgColor: "rgba(61, 153, 112, 0.69)", fgColor: "#3D9970" },
-  [LogType.ResponseError]: { text: "Response Error", bgColor: "rgba(255, 65, 54, 0.69)", fgColor: "#FF4136" },
-  [LogType.ResponseCache]: { text: "Response Cache", bgColor: "rgba(177, 13, 201, 0.69)", fgColor: "#B10DC9" }
+  [LogType.ResponseError]: {
+    text: "Response Error",
+    bgColor: "rgba(255, 65, 54, 0.69)",
+    fgColor: "#FF4136"
+  },
+  [LogType.ResponseCache]: {
+    text: "Response Cache",
+    bgColor: "rgba(177, 13, 201, 0.69)",
+    fgColor: "#B10DC9"
+  }
 }
 
 export const defaultOptions: Required<ApiSharpOptions> = {
@@ -267,9 +275,6 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   }
 }
 
-// 永不 resolve 或 reject 的 Promise
-const neverPromise = new Promise(() => {})
-
 export class ApiSharp {
   private readonly options: ApiSharpOptions
   private readonly httpClient: IHttpClient
@@ -293,21 +298,19 @@ export class ApiSharp {
 
     // 处理 mock 数据
     if (api.enableMock) {
-      return { data: api.mockData, from: "mock", api, headers: {}, status: 200, statusText: "OK(mock)" }
+      return {
+        data: api.mockData,
+        from: "mock",
+        api,
+        headers: {},
+        status: 200,
+        statusText: "OK(mock)"
+      }
     }
 
     let requestPromise: Promise<IResponse<T>>
     let cachedKey
     let hitCache = false
-
-    // 构造一个超时时自动 reject 的 Promise
-    let timeoutPromise: Promise<IResponse<T>> = neverPromise as Promise<IResponse<T>>
-    if (api.timeout > 0) {
-      timeoutPromise = new Promise((_resolve, reject) => {
-        const error = new Error(`请求超时(${api.timeout}ms)`)
-        setTimeout(() => reject(error), api.timeout)
-      })
-    }
 
     // 处理缓存
     if (api.enableCache) {
@@ -327,7 +330,7 @@ export class ApiSharp {
 
     // 获取请求结果
     try {
-      res = await Promise.race([requestPromise, timeoutPromise])
+      res = await requestPromise
     } catch (err) {
       // 处理请求异常情况
 
@@ -401,7 +404,8 @@ export class ApiSharp {
       method: api.method,
       headers: api.headers,
       body: api.method === "POST" ? api.body : null,
-      responseType: api.responseType
+      responseType: api.responseType,
+      timeout: api.timeout
     })
   }
 

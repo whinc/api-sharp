@@ -1,4 +1,10 @@
-import { formatResponseHeaders, isPlainObject, serializeSearch, isFormData } from "../utils"
+import {
+  formatResponseHeaders,
+  isPlainObject,
+  serializeSearch,
+  isFormData,
+  stringTable
+} from "../utils"
 import IHttpClient, { IResponse, IRequest } from "./IHttpClient"
 
 export interface WebXhrRequest extends IRequest {
@@ -15,6 +21,8 @@ export default class WebXhrClient implements IHttpClient {
 
       // 跨域请求带凭证
       xhr.withCredentials = options.withCredentials || false
+      // 设置超时
+      xhr.timeout = options.timeout
 
       // 转换数据
       let body: Document | BodyInit | null = null
@@ -64,17 +72,19 @@ export default class WebXhrClient implements IHttpClient {
             headers
           }
           _response = response
-          resolve(_response)
         }
       }
-      xhr.onabort = function () {
-        reject(new Error("Connection is aborted"))
+      xhr.onload = function() {
+        resolve(_response)
       }
-      xhr.ontimeout = function () {
-        reject(new Error("Connection timeout"))
+      xhr.onabort = function() {
+        reject(new Error(stringTable.ABORT))
       }
-      xhr.onerror = function () {
-        reject(new Error('Network error'))
+      xhr.ontimeout = function() {
+        reject(new Error(stringTable.TIMEOUT))
+      }
+      xhr.onerror = function() {
+        reject(new Error(stringTable.NETWORK_ERROR))
       }
       xhr.send(body)
     })
