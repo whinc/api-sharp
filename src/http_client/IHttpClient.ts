@@ -1,4 +1,4 @@
-import { ProcessedApiDescriptor } from "ApiSharp"
+import { ProcessedApiDescriptor } from "../core/ApiSharp"
 
 export type HttpMethod =
   | "get"
@@ -18,8 +18,9 @@ export type HttpMethod =
 
 export type HttpHeader = { [key: string]: string }
 
-export type QueryType = object | null
-export type BodyType = object | null
+export type DefaultQueryType = object
+export type DefaultBodyType = object
+export type DefaultDataType = any
 export type ResponseType = "text" | "json"
 
 type RequestFields = "url" | "method" | "body" | "headers" | "timeout" | "responseType"
@@ -28,14 +29,17 @@ type RequestFields = "url" | "method" | "body" | "headers" | "timeout" | "respon
  *
  * 由具体平台实现该接口，尽量保持接口精简，减少针对平台的实现成本
  */
-export type IRequest = Pick<ProcessedApiDescriptor, RequestFields>
+export type IRequest<Data, Query, Body> = Pick<
+  ProcessedApiDescriptor<Data, Query, Body>,
+  RequestFields
+>
 
-export interface IResponse<T = any> {
+export interface IResponse<Data = any> {
   /**
    * 接口返回数据
    * 返回 HTTP 响应数据经过数据转换后的值
    */
-  data: T
+  data: Data
   /**
    * HTTP 状态码
    */
@@ -51,5 +55,7 @@ export interface IResponse<T = any> {
 }
 
 export default interface IHttpClient {
-  request<T>(options: IRequest): Promise<IResponse<T>>
+  request<Data = DefaultDataType, Query = DefaultQueryType, Body = DefaultBodyType>(
+    options: IRequest<Data, Query, Body>
+  ): Promise<IResponse<Data>>
 }

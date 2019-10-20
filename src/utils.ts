@@ -1,4 +1,4 @@
-import { HttpHeader, QueryType } from "http_client/IHttpClient"
+import { HttpHeader } from "./http_client"
 
 export function isString(v: any): v is string {
   return typeof v === "string"
@@ -24,7 +24,7 @@ export function isPlainObject(v: any): v is object {
   return v !== null && typeof v === "object" && v.__proto__ === Object.prototype
 }
 
-export function isFormData(v) {
+export function isFormData(v): v is FormData {
   return typeof FormData !== "undefined" && v instanceof FormData
 }
 
@@ -46,14 +46,14 @@ export function identity<T>(v: T): T {
   return v
 }
 
-export function encodeQuery(query: QueryType): string {
+export function encodeQuery(query: object | null): string {
   if (!query) return ""
   return Object.keys(query).reduce((q, k) => {
     return (q ? q + "&" : q) + (encodeURIComponent(k) + "=" + encodeURIComponent(query[k]))
   }, "")
 }
 
-export function formatFullUrl(baseURL: string, url: string, query?: QueryType): string {
+export function formatFullUrl(baseURL: string, url: string, query: any): string {
   const queryString = query ? encodeQuery(query) : ""
   let fullUrl = baseURL + url
   if (fullUrl.includes("?")) {

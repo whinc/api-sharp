@@ -6,7 +6,7 @@ import {
   ApiSharpOptions,
   ApiDescriptor,
   ProcessedApiDescriptor
-} from "../src/ApiSharp"
+} from "../src/core/ApiSharp"
 import { WebXhrClient, HttpMethod, NodeHttpClient } from "../src/http_client"
 import { stringTable } from "../src/utils"
 

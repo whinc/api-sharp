@@ -1,9 +1,9 @@
 import http from "http"
-import IHttpClient, { IResponse, IRequest, HttpHeader } from "./IHttpClient"
+import IHttpClient, { IResponse, IRequest, HttpHeader, DefaultDataType, DefaultQueryType, DefaultBodyType } from "./IHttpClient"
 import { isPlainObject, serializeSearch, isString, stringTable } from "../utils"
 
 export default class NodeHttpClient implements IHttpClient {
-  request<T>(options: IRequest): Promise<IResponse<T>> {
+  request<Data = DefaultDataType, Query = DefaultQueryType, Body = DefaultBodyType>(options: IRequest<Data, Query, Body>): Promise<IResponse<Data>> {
     return new Promise((resolve, reject) => {
       let body: string | Buffer = ""
       if (isPlainObject(options.body)) {

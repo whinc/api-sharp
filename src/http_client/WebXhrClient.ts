@@ -5,17 +5,17 @@ import {
   isFormData,
   stringTable
 } from "../utils"
-import IHttpClient, { IResponse, IRequest } from "./IHttpClient"
+import IHttpClient, { IResponse, IRequest, DefaultBodyType, DefaultQueryType, DefaultDataType } from "./IHttpClient"
 
-export interface WebXhrRequest extends IRequest {
+export interface WebXhrRequest<Data, Query, Body> extends IRequest<Data, Query, Body> {
   withCredentials?: boolean
 }
 
 export default class WebXhrClient implements IHttpClient {
-  request<T>(options: WebXhrRequest): Promise<IResponse<T>> {
+  request<Data = DefaultDataType, Query = DefaultQueryType, Body = DefaultBodyType>(options: WebXhrRequest<Data, Query, Body>): Promise<IResponse<Data>> {
     return new Promise((resolve, reject) => {
       // 暂存返回数据
-      let _response: IResponse<T>
+      let _response: IResponse<Data>
       const xhr = new XMLHttpRequest()
       xhr.open(options.method, options.url, true)
 
@@ -25,7 +25,8 @@ export default class WebXhrClient implements IHttpClient {
       xhr.timeout = options.timeout
 
       // 转换数据
-      let body: Document | BodyInit | null = null
+      // let body: Document | BodyInit | null = null
+      let body: string | FormData | null = null
       if (options.method === "POST") {
         if (isPlainObject(options.body)) {
           // 如果是纯 JS 对象，则依据 Content-Type 序列化成字符串
@@ -43,7 +44,7 @@ export default class WebXhrClient implements IHttpClient {
           body = options.body
         } else {
           // 其他情况透传
-          body = options.body
+          body = options.body as any
         }
       }
 
