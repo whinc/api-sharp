@@ -482,18 +482,8 @@ export class ApiSharp {
     return _api
   }
 
-  protected checkResponseData(_data: any): { success: boolean; errMsg?: string } {
-    // return {
-    //   success: false,
-    //   errMsg: ''
-    // }
-    return {
-      success: true
-    }
-  }
-
   private logRequest(api: ProcessedApiDescriptor) {
-    api.enableLog && api.formatLog(LogType.Response, api)
+    api.enableLog && api.formatLog(LogType.Request, api)
   }
 
   private logResponse(api: ProcessedApiDescriptor, data) {
