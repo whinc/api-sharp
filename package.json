@@ -4,6 +4,10 @@
   "main": "dist/index.js",
   "module": "dist/api-sharp.esm.js",
   "typings": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whinc/api-sharp.git"
+  },
   "files": [
     "dist"
   ],
@@ -15,7 +19,6 @@
     "lint": "tsdx lint",
     "print:coverage": "jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
     "coverage": "jest --coverage --coverageReporters=text-lcov | coveralls",
-    "clean": "[ -d 'dist' ] && rm -rf dist || echo 'no such directory \"dist\"'",
     "server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
     "pm2:server": "pm2 start npm --no-autorestart --name start_server -- run server",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
@@ -28,6 +31,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "core-js": "^3.2.1"
   },
   "optionalDependencies": {
     "prop-types": "^15.7.2"
@@ -54,33 +60,9 @@
     "prop-types": "^15.7.2",
     "semantic-release": "^15.13.24",
     "ts-node": "^8.4.1",
-    "tsdx": "^0.9.3",
+    "tsdx": "^0.10.5",
     "tslib": "^1.10.0",
     "typescript": "^3.6.3",
     "xhr2": "^0.2.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/whinc/api-sharp.git"
-  },
-  "jest": {
-    "globals": {
-      "__DEV__": true,
-      "ts-jest": {
-        "diagnostics": {
-          "warnOnly": true
-        }
-      }
-    },
-    "testMatch": [
-      "<rootDir>/test/**/*.test.ts"
-    ],
-    "watchPathIgnorePatterns": [
-      "<rootDir>/test/server/",
-      "<rootDir>/node_modules/"
-    ]
-  },
-  "dependencies": {
-    "core-js": "^3.2.1"
   }
 }
