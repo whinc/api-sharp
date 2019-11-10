@@ -1,5 +1,3 @@
-import { HttpHeader } from "./http_client"
-
 export function isString(v: any): v is string {
   return typeof v === "string"
 }
@@ -64,7 +62,7 @@ export function formatFullUrl(baseURL: string, url: string, query: any): string 
   return fullUrl
 }
 
-export function formatResponseHeaders(headers: string): HttpHeader {
+export function formatResponseHeaders(headers: string): Record<string, any> {
   var arr = headers.trim().split(/[\r\n]+/)
   var headerMap = {}
 

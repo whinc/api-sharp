@@ -6,13 +6,13 @@ import {
   ApiSharpOptions,
   ApiDescriptor,
   ProcessedApiDescriptor
-} from "../src/core/ApiSharp"
-import { WebXhrClient, HttpMethod, NodeHttpClient } from "../src/http_client"
+} from "../src"
+import { WebXhrClient, HttpMethod, NodeHttpClient } from "../src"
 import { stringTable } from "../src/utils"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
-// const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
-const apiSharp = new ApiSharp({ enableLog: false, httpClient: new NodeHttpClient() })
+const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
+// const apiSharp = new ApiSharp({ enableLog: false, httpClient: new NodeHttpClient() })
 
 const baseURL = "http://localhost:4000"
 

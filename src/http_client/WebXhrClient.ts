@@ -5,17 +5,18 @@ import {
   isFormData,
   stringTable
 } from "../utils"
-import IHttpClient, { IResponse, IRequest, DefaultBodyType, DefaultQueryType, DefaultDataType } from "./IHttpClient"
+import IHttpClient from "./IHttpClient"
+import { IResponse, IRequest } from "../types"
 
-export interface WebXhrRequest<Data, Query, Body> extends IRequest<Data, Query, Body> {
+export interface WebXhrRequest extends IRequest {
   withCredentials?: boolean
 }
 
 export default class WebXhrClient implements IHttpClient {
-  request<Data = DefaultDataType, Query = DefaultQueryType, Body = DefaultBodyType>(options: WebXhrRequest<Data, Query, Body>): Promise<IResponse<Data>> {
+  request(options: WebXhrRequest): Promise<IResponse> {
     return new Promise((resolve, reject) => {
       // 暂存返回数据
-      let _response: IResponse<Data>
+      let _response: IResponse
       const xhr = new XMLHttpRequest()
       xhr.open(options.method, options.url, true)
 

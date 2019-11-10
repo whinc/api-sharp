@@ -1,18 +1,23 @@
 import * as PropTypes from "../PropTypes"
-import { isString, getSortedString, identity, invariant, warning, isPlainObject } from "../utils"
-import { ICache, MemoryCache } from "../cache"
 import {
-  WebXhrClient,
-  IHttpClient,
-  IResponse,
+  isString,
+  getSortedString,
+  identity,
+  invariant,
+  warning,
+  isPlainObject,
+  formatFullUrl
+} from "../utils"
+import {
+  ApiResponse,
+  ProcessedApiDescriptor,
+  LogType,
+  ApiDescriptor,
   HttpMethod,
-  HttpHeader,
-  ResponseType,
-  DefaultBodyType,
-  DefaultQueryType,
-  DefaultDataType
-} from "../http_client"
-import { formatFullUrl } from "../utils"
+  IResponse
+} from "../types"
+import { ICache, MemoryCache } from "../cache"
+import { WebXhrClient, IHttpClient } from "../http_client"
 
 const removeUndefinedValue = target => {
   return Object.keys(target)
@@ -22,200 +27,11 @@ const removeUndefinedValue = target => {
 
 const httpMethodRegExp = /GET|POST|DELETE|HEAD|OPTIONS|PUT|PATCH/i
 
-export interface ApiResponse<Data, Query, Body> extends IResponse<Data> {
-  /**
-   * 请求接口描述符
-   */
-  api: ProcessedApiDescriptor<Data, Query, Body>
-  /**
-   * 响应数据的来源
-   */
-  from: "cache" | "network" | "mock"
-}
-
-export type ApiDescriptor<Data = DefaultDataType, Query = DefaultQueryType, Body = DefaultBodyType> = CommonApiDescriptor<Data, Query, Body> & WebXhrApiDescriptor
-
-interface CommonApiDescriptor<Data, Query, Body> {
-  /**
-   * 请求地址
-   *
-   * 支持相对地址（如`"/a/b/c"`）和绝对地址（如`"http://xyz.com/a/b/c"`）
-   */
-  url: string
-  /**
-   * 基地址
-   *
-   * 默认`""`
-   *
-   * 例如：`'http://xyz.com'`, `'http://xyz.com/a/b'`
-   */
-  baseURL?: string
-  /**
-   * HTTP 请求方法
-   *
-   * 支持 `GET|POST|DELETE|HEAD|OPTIONS|PUT|PATCH`
-   *
-   * 默认`"GET"`
-   */
-  method?: HttpMethod
-  /**
-   * HTTP 请求头
-   *
-   * 如果设置了全局 headers，接口中的 headers 将于全局 headers 合并，且接口中的 header 优先级更高
-   *
-   * 默认`{"Content-Type": "application/json"}`
-   */
-  headers?: HttpHeader
-  /**
-   * 接口描述
-   *
-   * 默认`""`
-   */
-  description?: string
-  /**
-   * 请求 URL 中的查询参数
-   *
-   * 对象会转换成 URL 查询字符串并拼接在 URL 后面，转换规则：encodeURIComponent(k1)=encodeURIComponent(v1)&encodeURIComponent(k2)=encodeURIComponent(v2)...
-   *
-   * 例如：`{a: 1, b: 2}`会转换成`"a=1&b=2"`
-   */
-  query?: Query | null
-  /**
-   * 请求 URL 中的查询参数类型
-   *
-   * 仅当 query 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
-   *
-   * 例如：`{ id: PropTypes.number.isRequired }`
-   */
-  queryPropTypes?: Query extends object ? { [K in keyof Query]?: PropTypes.Validator } | null : null
-  /**
-   * 请求体中的数据
-   *
-   * 仅支持 POST 请求，数据会转换成字符串传输，转换规则由请求头`Content-Type`决定：
-   * 请求头包含`Content-Type: application/json`时，数据序列化为 JSON 字符串
-   *
-   * 例如：`{a: 1, b: 2}`
-   */
-  body?: Body | null
-  /**
-   * 传入的`body`的数据类型
-   *
-   * 仅当 body 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行类型检查，类型检查时机发生在使用`transformRequest`进行数据转换之前
-   *
-   * 例如：`{ id: PropTypes.number.isRequired }`
-   */
-  bodyPropTypes?: Body extends object ? { [P in keyof Body]?: PropTypes.Validator } | null : null
-  /**
-   * 响应的数据类型
-   *
-   * 支持类型如下：
-   *
-   * `"text"`：返回字符串
-   * `"json"`：返回`JSON.parse()`后的结果，如果解析失败返回`null`
-   *
-   * 默认`"json"`
-   */
-  responseType?: ResponseType
-  /**
-   * 转换请求数据
-   */
-  transformRequest?: (body: Body | null, headers: HttpHeader) => any
-  /**
-   * 检查响应数据是否有效
-   *
-   * 检查函数返回 true 表示成功，返回 false 表示失败（失败信息为 HTTP 状态码描述)，返回 Error 也表示失败（失败信息为 Error 中的错误消息）
-   *
-   * 默认：`(res) => res.status >= 200 && res.status < 300`
-   */
-  validateResponse?: (res: IResponse<Data>) => boolean | Error
-  /**
-   * 转换响应数据
-   */
-  transformResponse?: (data: Data) => any
-  /**
-   * 开启缓存
-   *
-   * 开启后，优先返回缓存，如果无可用缓存则请求网络，并缓存返回结果
-   *
-   * 默认`false`
-   */
-  enableCache?: boolean
-  /**
-   * 缓存持续时间，单位毫秒
-   *
-   * 本次网络请求结果缓存的时间，仅当 enableCache 为 true 时有效
-   *
-   * 默认 `5*60*1000`ms
-   */
-  cacheTime?: number
-  /**
-   * 开启接口数据模拟
-   *
-   * 默认`false`
-   */
-  enableMock?: boolean
-  /**
-   * 模拟的接口数据
-   *
-   * 默认`undefined`
-   *
-   * 例如：`{id: 1, name: 'jim'}`
-   */
-  mockData?: any
-  /**
-   * 开启失败重试
-   *
-   * 默认`false`
-   */
-  enableRetry?: boolean
-  /**
-   * 重试最大次数
-   *
-   * 默认`1`
-   */
-  retryTimes?: number
-  /**
-   * 接口超时时间，单位毫秒
-   *
-   * 从发出请求起，如果 timeout 毫秒后接口未返回，接口调用失败。
-   *
-   * 默认`60*1000`ms
-   */
-  timeout?: number
-  /**
-   * 开启控制台日志
-   *
-   * 默认为`process.env.NODE_ENV !== "production"`
-   */
-  enableLog?: boolean
-  /**
-   * 格式化日志
-   */
-  formatLog?: (type: LogType, api: ProcessedApiDescriptor<Data, Query, Body>, data?: any) => void
-}
-
-interface WebXhrApiDescriptor {
-  /**
-   * 跨域请求时是否带上用户信息（如Cookie和认证的HTTP头）
-   *
-   * 默认`false`
-   */
-  withCredentials?: boolean
-}
-
-export type ProcessedApiDescriptor<Data, Query, Body> = Required<ApiDescriptor<Data, Query, Body>>
-
-export enum LogType {
-  Request,
-  Response,
-  ResponseError,
-  ResponseCache
-}
-
 /**
  * 全局配置项
  */
-export interface ApiSharpOptions<Data = DefaultDataType, Query = DefaultQueryType, Body = DefaultBodyType> extends Partial<ApiDescriptor<Data, Query, Body>> {
+export interface ApiSharpOptions<QueryType = Record<string, any>, BodyType = Record<string, any>>
+  extends Partial<ApiDescriptor<QueryType, BodyType>> {
   httpClient?: IHttpClient
   cache?: ICache<IResponse>
 }
@@ -292,7 +108,7 @@ export class ApiSharp {
    * @param api - 接口描述符
    * @return 响应数据
    */
-  async request<Data, Query, Body>(_api: ApiDescriptor<Data, Query, Body> | string): Promise<ApiResponse<Data, Query, Body>> {
+  async request<T = any>(_api: ApiDescriptor | string): Promise<ApiResponse<T>> {
     const api = this.processApi(_api)
 
     this.logRequest(api)
@@ -309,25 +125,25 @@ export class ApiSharp {
       }
     }
 
-    let requestPromise: Promise<IResponse<Data>>
+    let requestPromise: Promise<IResponse<T>>
     let cachedKey
     let hitCache = false
 
     // 处理缓存
     if (api.enableCache) {
-      cachedKey = this.generateCachedKey<Data, Query, Body>(api)
+      cachedKey = this.generateCachedKey(api)
       if (this.cache.has(cachedKey)) {
         const cachedRes = this.cache.get(cachedKey)!
         requestPromise = Promise.resolve(cachedRes)
         hitCache = true
       } else {
-        requestPromise = this.sendRequest<Data, Query, Body>(api)
+        requestPromise = this.sendRequest<T>(api)
       }
     } else {
-      requestPromise = this.sendRequest<Data, Query, Body>(api)
+      requestPromise = this.sendRequest<T>(api)
     }
 
-    let res: IResponse<Data>
+    let res: IResponse<T>
 
     // 获取请求结果
     try {
@@ -398,30 +214,26 @@ export class ApiSharp {
     return this.cache.clear()
   }
 
-  private sendRequest<Data, Query, Body>(api: ProcessedApiDescriptor<Data, Query, Body>): Promise<IResponse<Data>> {
+  private sendRequest<T>(api: ProcessedApiDescriptor): Promise<IResponse<T>> {
     const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.query : null)
-    return this.httpClient.request<Data, Query, Body>({
-      url: fullUrl,
-      method: api.method,
-      headers: api.headers,
-      body: api.method === "POST" ? api.body : null,
-      responseType: api.responseType,
-      timeout: api.timeout
+    return this.httpClient.request({
+      ...api,
+      url: fullUrl
     })
   }
 
-  private generateCachedKey<Data, Query, Body>(api: ApiDescriptor<Data, Query, Body>) {
+  private generateCachedKey(api: ApiDescriptor) {
     return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.query)}`
   }
 
-  private mergeApi<Data, Query, Body>(
-    api: ApiDescriptor<Data, Query, Body>,
+  private mergeApi(
+    api: ApiDescriptor,
     options: ApiSharpOptions,
     defaultOptions: Required<ApiSharpOptions>
-  ): ProcessedApiDescriptor<Data, Query, Body> {
+  ): ProcessedApiDescriptor {
     const { httpClient, cache, ..._defaultOptions } = defaultOptions
-    const _options = removeUndefinedValue(options) as ApiSharpOptions<Data, Query, Body>
-    const _api = removeUndefinedValue(api) as Required<ApiSharpOptions<Data, Query, Body>>
+    const _options = removeUndefinedValue(options) as ApiSharpOptions
+    const _api = removeUndefinedValue(api) as ApiSharpOptions
     return {
       ..._defaultOptions,
       ..._options,
@@ -437,7 +249,7 @@ export class ApiSharp {
   /**
    * 预处理接口，设置默认值、进行类型检查、数据转换等
    */
-  public processApi<Data, Query, Body>(api: ApiDescriptor<Data, Query, Body> | string): ProcessedApiDescriptor<Data, Query, Body> {
+  public processApi(api: ApiDescriptor | string): ProcessedApiDescriptor {
     invariant(api, "api 为空")
 
     if (isString(api)) {
@@ -483,19 +295,19 @@ export class ApiSharp {
     return _api
   }
 
-  private logRequest<Data, Query, Body>(api: ProcessedApiDescriptor<Data, Query, Body>) {
+  private logRequest(api: ProcessedApiDescriptor) {
     api.enableLog && api.formatLog(LogType.Request, api)
   }
 
-  private logResponse<Data, Query, Body>(api: ProcessedApiDescriptor<Data, Query, Body>, data) {
+  private logResponse(api: ProcessedApiDescriptor, data) {
     api.enableLog && api.formatLog(LogType.Response, api, data)
   }
 
-  private logResponseError<Data, Query, Body>(api: ProcessedApiDescriptor<Data, Query, Body>, data?: any) {
+  private logResponseError(api: ProcessedApiDescriptor, data?: any) {
     api.enableLog && api.formatLog(LogType.ResponseError, api, data)
   }
 
-  private logResponseCache<Data, Query, Body>(api: ProcessedApiDescriptor<Data, Query, Body>, data) {
+  private logResponseCache(api: ProcessedApiDescriptor, data) {
     api.enableLog && api.formatLog(LogType.ResponseCache, api, data)
   }
 }

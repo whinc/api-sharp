@@ -22,6 +22,7 @@
     "server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
     "pm2:server": "pm2 start npm --no-autorestart --name start_server -- run server",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "tsc:check": "tsc --noEmit",
     "release": "semantic-release"
   },
   "husky": {

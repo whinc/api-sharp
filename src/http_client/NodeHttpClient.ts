@@ -1,9 +1,10 @@
 import http from "http"
-import IHttpClient, { IResponse, IRequest, HttpHeader, DefaultDataType, DefaultQueryType, DefaultBodyType } from "./IHttpClient"
+import IHttpClient from "./IHttpClient"
+import { IRequest, IResponse } from "../types"
 import { isPlainObject, serializeSearch, isString, stringTable } from "../utils"
 
 export default class NodeHttpClient implements IHttpClient {
-  request<Data = DefaultDataType, Query = DefaultQueryType, Body = DefaultBodyType>(options: IRequest<Data, Query, Body>): Promise<IResponse<Data>> {
+  request(options: IRequest): Promise<IResponse> {
     return new Promise((resolve, reject) => {
       let body: string | Buffer = ""
       if (isPlainObject(options.body)) {
@@ -52,7 +53,7 @@ export default class NodeHttpClient implements IHttpClient {
               data: _data,
               status: res.statusCode!,
               statusText: res.statusMessage!,
-              headers: res.headers as HttpHeader
+              headers: res.headers
             }
             resolve(_response)
           })
