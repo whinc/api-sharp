@@ -7,7 +7,7 @@ import {
   ApiDescriptor,
   ProcessedApiDescriptor
 } from "../src"
-import { WebXhrClient, HttpMethod, NodeHttpClient } from "../src"
+import { WebXhrClient, HttpMethod } from "../src"
 import { stringTable } from "../src/utils"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
@@ -17,7 +17,7 @@ const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient()
 const baseURL = "http://localhost:4000"
 
 // 等待一会
-const sleep = (timeout = 10) => new Promise(resolve => setTimeout(resolve, timeout))
+// const sleep = (timeout = 10) => new Promise(resolve => setTimeout(resolve, timeout))
 
 // 清除 db.json 数据
 async function clearDB() {
@@ -599,14 +599,17 @@ describe("测试 ApiSharp.request()", () => {
   })
 
   describe("测试 transformResponse", () => {
-    test("返回数据是对象，转换后数字后，实际调用返回的应该是这个数字", async () => {
+    test("修改响应数据", async () => {
       const newPost = mockOnePost()
       const response = await apiSharp.request({
         baseURL,
         url: "/posts",
         method: "POST",
         body: newPost,
-        transformResponse: returns => ({ ...returns, extra: 100 })
+        transformResponse: response => {
+          response.data.extra = 100
+          return response
+        }
       })
       expect(response.data.extra).toEqual(100)
     })
@@ -626,13 +629,14 @@ describe("测试 ApiSharp.request()", () => {
       const newPost = mockOnePost()
       expect.assertions(1)
       try {
-        const response = await apiSharp.request({
+        await apiSharp.request({
           baseURL,
           url: "/posts",
           method: "POST",
           body: newPost,
           // 这里使用 Symbol 比较必定返回 false
-          validateResponse: res => res.status >= 200 && res.status < 300 && res.data === Symbol()
+          validateResponse: res =>
+            res.status >= 200 && res.status < 300 && res.data === (Symbol() as any)
         })
       } catch (err) {
         expect(err.message).toBe("Created")
@@ -643,14 +647,14 @@ describe("测试 ApiSharp.request()", () => {
       expect.assertions(1)
       const _err = new Error("Invalid data")
       try {
-        const response = await apiSharp.request({
+        await apiSharp.request({
           baseURL,
           url: "/posts",
           method: "POST",
           body: newPost,
           // 这里使用 Symbol 比较必定返回 false
           validateResponse: res =>
-            res.status >= 200 && res.status < 300 && res.data === Symbol() ? true : _err
+            res.status >= 200 && res.status < 300 && res.data === (Symbol() as any) ? true : _err
         })
       } catch (err) {
         expect(err).toBe(_err)
@@ -689,10 +693,9 @@ describe("测试 ApiSharp.request()", () => {
       }
     })
     test("接口请求超时，抛出异常", async () => {
-      const newPost = mockOnePost()
       expect.assertions(1)
       try {
-        const res = await apiSharp.request({
+        await apiSharp.request({
           baseURL,
           url: "/delay",
           query: {

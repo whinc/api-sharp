@@ -88,7 +88,7 @@ interface CommonApiDescriptor<Query, Body> {
    *
    * 例如：`{ id: PropTypes.number.isRequired }`
    */
-  queryPropTypes?: Query extends object ? { [K in keyof Query]?: Validator } | null : null
+  queryPropTypes?: (Query extends object ? { [K in keyof Query]?: Validator } : never) | null
   /**
    * 请求体中的数据
    *
@@ -132,7 +132,7 @@ interface CommonApiDescriptor<Query, Body> {
   /**
    * 转换响应数据
    */
-  transformResponse?: <Data = any>(data: Data) => any
+  transformResponse?: (response: IResponse) => IResponse
   /**
    * 开启缓存
    *

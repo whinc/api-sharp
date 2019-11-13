@@ -143,11 +143,11 @@ export class ApiSharp {
       requestPromise = this.sendRequest<T>(api)
     }
 
-    let res: IResponse<T>
+    let response: IResponse<T>
 
     // 获取请求结果
     try {
-      res = await requestPromise
+      response = await requestPromise
     } catch (err) {
       // 处理请求异常情况
 
@@ -166,11 +166,11 @@ export class ApiSharp {
     }
 
     // 处理请求返回情况
-    const result = api.validateResponse(res)
+    const result = api.validateResponse(response)
     if (result === true) {
       // 请求成功，缓存结果（如果本次结果来自缓存，则不更新缓存，避免缓存期无限延长）
       if (api.enableCache && cachedKey && !hitCache) {
-        this.cache.set(cachedKey, res, api.cacheTime)
+        this.cache.set(cachedKey, response, api.cacheTime)
       }
     } else {
       // 请求失败，重置缓存
@@ -181,29 +181,26 @@ export class ApiSharp {
       if (api.enableRetry && api.retryTimes >= 1) {
         return this.request({ ...api, retryTimes: api.retryTimes - 1 })
       } else {
-        this.logResponseError(api, res.data)
+        this.logResponseError(api, response.data)
         // __DEV__ && console.error(res)
-        throw result instanceof Error ? result : new Error(res.statusText)
+        throw result instanceof Error ? result : new Error(response.statusText)
       }
     }
 
     // 打印原始数据
     if (hitCache) {
-      this.logResponseCache(api, res.data)
+      this.logResponseCache(api, response.data)
     } else {
-      this.logResponse(api, res.data)
+      this.logResponse(api, response.data)
     }
 
     // 转换后的数据
-    const transformedData = api.transformResponse(res.data)
+    const transformedResponse = api.transformResponse(response)
 
     return {
-      data: transformedData,
+      ...transformedResponse,
       from: hitCache ? "cache" : "network",
-      api,
-      status: res.status,
-      statusText: res.statusText,
-      headers: res.headers
+      api
     }
   }
 
