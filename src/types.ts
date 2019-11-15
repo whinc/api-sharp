@@ -34,9 +34,9 @@ export enum LogType {
 export type ApiDescriptor<
   Query = Record<string, any>,
   Body = Record<string, any>
-> = CommonApiDescriptor<Query, Body> & WebXhrApiDescriptor
+> = BasicApiDescriptor<Query, Body> & WebXhrApiDescriptor
 
-interface CommonApiDescriptor<Query, Body> {
+interface BasicApiDescriptor<Query, Body> {
   /**
    * 请求地址
    *
@@ -120,7 +120,7 @@ interface CommonApiDescriptor<Query, Body> {
   /**
    * 转换请求数据
    */
-  transformRequest?: (body: Body | null, headers: Record<string, any>) => any
+  transformRequest?: (request: IRequest) => IRequest
   /**
    * 检查响应数据是否有效
    *
@@ -132,7 +132,7 @@ interface CommonApiDescriptor<Query, Body> {
   /**
    * 转换响应数据
    */
-  transformResponse?: (response: IResponse) => IResponse
+  transformResponse?: <Data = any>(response: IResponse<Data>) => IResponse
   /**
    * 开启缓存
    *
@@ -207,9 +207,9 @@ interface WebXhrApiDescriptor {
 export type ProcessedApiDescriptor<Query = any, Body = any> = Required<ApiDescriptor<Query, Body>>
 
 /**
- * 请求参数接口
+ * 请求参数
  *
- * 由具体平台实现该接口，尽量保持接口精简，减少针对平台的实现成本
+ * 里面列出字段必存在，其他字段透传
  */
 export type IRequest = {
   url: string

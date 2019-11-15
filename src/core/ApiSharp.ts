@@ -111,6 +111,9 @@ export class ApiSharp {
   async request<T = any>(_api: ApiDescriptor | string): Promise<ApiResponse<T>> {
     const api = this.processApi(_api)
 
+    // 转换请求
+    Object.assign(api, api.transformRequest(api))
+
     this.logRequest(api)
 
     // 处理 mock 数据
@@ -194,11 +197,11 @@ export class ApiSharp {
       this.logResponse(api, response.data)
     }
 
-    // 转换后的数据
-    const transformedResponse = api.transformResponse(response)
+    // 转换响应
+    response = api.transformResponse(response)
 
     return {
-      ...transformedResponse,
+      ...response,
       from: hitCache ? "cache" : "network",
       api
     }
@@ -286,9 +289,6 @@ export class ApiSharp {
         PropTypes.checkPropTypes(_api.bodyPropTypes, _body, "", name)
       }
     }
-    // 转换请求数据
-    _api.body = _api.transformRequest.call(null, _body, _api.headers)
-
     return _api
   }
 

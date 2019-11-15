@@ -313,39 +313,14 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     })
   })
 
-  describe("测试 api.transformRequest", () => {
-    test("转换请求数据", () => {
-      const api: ApiDescriptor = {
-        url: baseURL,
-        method: "post",
-        bodyPropTypes: {
-          id: PropTypes.string.isRequired
-        },
-        body: {
-          id: 10
-        },
-        transformRequest: (body: any) => ({ ...body, name: "jack" })
-      }
-      const _api = apiSharp.processApi(api)
-      expect(_api.body).toEqual({ id: 10, name: "jack" })
-    })
-    test("在转换请求数据前，进行类型检查", () => {
-      const api: ApiDescriptor = {
-        url: baseURL,
-        method: "post",
-        bodyPropTypes: {
-          name: PropTypes.string.isRequired
-        },
-        body: {
-          id: 10
-        },
-        transformRequest: (body: any) => ({ ...body, name: "jack" })
-      }
-      const { getArgsAndUnwrap } = wrapConsole("error")
-      const _api = apiSharp.processApi(api)
-      expect(getArgsAndUnwrap()).not.toBeNull()
-      expect(_api.body).toEqual({ id: 10, name: "jack" })
-    })
+  test("transformRequest", () => {
+    const api: ApiDescriptor = {
+      url: baseURL,
+      transformRequest: request => ({ ...request, query: { name: "jim" } })
+    }
+    let _api = apiSharp.processApi(api)
+    Object.assign(_api, _api.transformRequest(_api))
+    expect(_api.query).toEqual({ name: "jim" })
   })
 
   describe("测试 api.responseType", () => {
