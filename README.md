@@ -3,7 +3,7 @@
 <div align="center">
 <p>
 
-[![npm](https://img.shields.io/npm/v/api-sharp)](https://www.npmjs.com/package/api-sharp) ![](https://img.shields.io/bundlephobia/minzip/api-sharp) ![](https://img.shields.io/npm/dt/api-sharp) [![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)](https://circleci.com/dashboard) [![Coverage Status](https://coveralls.io/repos/github/whinc/api-sharp/badge.svg?branch=master)](https://coveralls.io/github/whinc/api-sharp?branch=master)
+[![npm](https://img.shields.io/npm/v/api-sharp)](https://www.npmjs.com/package/api-sharp) ![](https://img.shields.io/bundlephobia/minzip/api-sharp) ![](https://img.shields.io/npm/dt/api-sharp) [![CircleCI](https://img.shields.io/circleci/build/github/whinc/api-sharp/master?token=53761af868327e3798c609f9ceed6b5690147827)](https://circleci.com/dashboard) [![Coverage Status](https://coveralls.io/repos/github/whinc/api-sharp/badge.svg?branch=master)](https://coveralls.io/github/whinc/api-sharp?branch=master) [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 
 </p>
 
