@@ -63,9 +63,7 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   url: "",
   description: "",
   query: null,
-  queryPropTypes: null,
   body: null,
-  bodyPropTypes: null,
   enableMock: false,
   mockData: undefined,
   method: "GET",
@@ -268,25 +266,6 @@ export class ApiSharp {
     )
 
     _api.timeout = Math.ceil(Math.max(_api.timeout, 0))
-
-    const _query = _api.query
-    // 检查查询参数类型
-    if (__DEV__) {
-      if (isPlainObject(_query) && isPlainObject(_api.queryPropTypes)) {
-        const name = _api.baseURL + _api.url
-        PropTypes.checkPropTypes(_api.queryPropTypes, _query, "", name)
-      }
-    }
-    _api.query = _query
-
-    const _body = _api.body
-    // 检查请求数据类型
-    if (__DEV__) {
-      if (isPlainObject(_body) && isPlainObject(_api.bodyPropTypes)) {
-        const name = _api.baseURL + _api.url
-        PropTypes.checkPropTypes(_api.bodyPropTypes, _body, "", name)
-      }
-    }
     return _api
   }
 

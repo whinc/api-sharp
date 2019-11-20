@@ -1,13 +1,3 @@
-interface Validator {
-  (
-    props: object,
-    propName: string,
-    componentName: string,
-    location: string,
-    propFullName: string
-  ): Error | null
-}
-
 export type HttpMethod =
   | "get"
   | "GET"
@@ -82,14 +72,6 @@ interface BasicApiDescriptor<Query, Body> {
    */
   query?: Query | null
   /**
-   * 请求 URL 中的查询参数类型
-   *
-   * 仅当 query 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
-   *
-   * 例如：`{ id: PropTypes.number.isRequired }`
-   */
-  queryPropTypes?: (Query extends object ? { [K in keyof Query]?: Validator } : never) | null
-  /**
    * 请求体中的数据
    *
    * 仅支持 POST 请求，数据会转换成字符串传输，转换规则由请求头`Content-Type`决定：
@@ -98,14 +80,6 @@ interface BasicApiDescriptor<Query, Body> {
    * 例如：`{a: 1, b: 2}`
    */
   body?: Body | null
-  /**
-   * 传入的`body`的数据类型
-   *
-   * 仅当 body 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行类型检查，类型检查时机发生在使用`transformRequest`进行数据转换之前
-   *
-   * 例如：`{ id: PropTypes.number.isRequired }`
-   */
-  bodyPropTypes?: Body extends object ? { [P in keyof Body]?: Validator } | null : null
   /**
    * 响应的数据类型
    *

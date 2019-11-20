@@ -1,5 +1,4 @@
 import axios from "axios"
-import PropTypes from "prop-types"
 import {
   ApiSharp,
   defaultOptions,
@@ -79,8 +78,6 @@ function wrapConsole(method) {
 }
 
 beforeEach(() => {
-  // 重置告警缓存（默认输出过一次的告警会被缓存，第二次出现重复告警时不会打印，导致依赖打印的测试失效）
-  PropTypes.resetWarningCache()
   // 清除 ApiSharp 缓存，避免影响后续测试单元
   apiSharp.clearCache()
 })
@@ -256,60 +253,6 @@ describe("测试 ApiSharp.processApi() 方法", () => {
     const api: ApiDescriptor = { url: baseURL }
     test("api.body 默认为 null", () => {
       expect(apiSharp.processApi(api).body).toBeNull()
-    })
-  })
-
-  // 参考： https://github.com/facebook/prop-types/blob/master/factoryWithTypeCheckers.js
-  describe("测试 api.searchPropTypes", () => {
-    test("测试必填参数", () => {
-      const { getArgsAndUnwrap } = wrapConsole("error")
-      const api: ApiDescriptor = {
-        url: baseURL,
-        queryPropTypes: {
-          id: PropTypes.number.isRequired
-        },
-        query: {}
-      }
-      const _api = apiSharp.processApi(api)
-      const location = ""
-      const propFullName = "id"
-      const componentName = _api.baseURL + _api.url
-      const message =
-        "Warning: Failed  type: " +
-        "The " +
-        location +
-        " `" +
-        propFullName +
-        "` is marked as required in " +
-        ("`" + componentName + "`, but its value is `undefined`.")
-      expect(getArgsAndUnwrap()).toEqual([message])
-    })
-  })
-
-  describe("测试 api.bodyPropTypes", () => {
-    test("测试必填参数", () => {
-      const { getArgsAndUnwrap } = wrapConsole("error")
-      const api: ApiDescriptor = {
-        url: baseURL,
-        method: "post",
-        bodyPropTypes: {
-          name: PropTypes.number.isRequired
-        },
-        body: {}
-      }
-      const _api = apiSharp.processApi(api)
-      const location = ""
-      const propFullName = "name"
-      const componentName = _api.baseURL + _api.url
-      const message =
-        "Warning: Failed  type: " +
-        "The " +
-        location +
-        " `" +
-        propFullName +
-        "` is marked as required in " +
-        ("`" + componentName + "`, but its value is `undefined`.")
-      expect(getArgsAndUnwrap()).toEqual([message])
     })
   })
 

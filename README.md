@@ -19,7 +19,6 @@
 - 支持数据转换
 - 支持自动解析 JSON
 - 支持设置请求超时
-- 支持参数类型检查
 - 支持缓存（内存缓存、持久化存储缓存、自定义缓存）
 - 支持接口 mock
 - 支持失败重试
@@ -30,8 +29,6 @@
   - 浏览器使用 [XMLHttpRequest](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest) 请求
   - node.js 使用 [http](https://nodejs.org/api/http.html) 请求
   - 即将到来...（更多平台将会内置支持，不支持的可自行实现，扩展非常简单）
-
-> 类型检查基于[prop-types](https://github.com/facebook/prop-types)，仅在开发环境下会进行检查，不会影响 production 环境下构建包的大小和性能。
 
 | ![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -114,24 +111,6 @@ const response2 = await apiSharp.request(apiDescriptor)
 expect(response1.from).toEqual("network")
 expect(response2.from).toEqual("cache")
 expect(response1.data).toEqual(response2.data)
-```
-
-开启参数类型校验
-
-```js
-// 引入 prop-types
-import PropTypes from "prop-types"
-
-const response = await apiSharp.request({
-  url: "/json/server_date",
-  queryPropTypes: {
-    name: PropTypes.string.isRequired
-  },
-  query: {
-    name: "jim"
-  }
-})
-// 如果参数 name 省略或者不是 string 类型，控制台打印错误提示，但不会阻止请求发出
 ```
 
 开启接口数据 mock
@@ -217,14 +196,6 @@ interface CommonApiDescriptor {
    */
   query?: QueryType
   /**
-   * 请求 URL 中的查询参数类型
-   *
-   * 仅当 query 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行检查
-   *
-   * 例如：`{ id: PropTypes.number.isRequired }`
-   */
-  queryPropTypes?: { [key: string]: Validator<any> } | null
-  /**
    * 请求体中的数据
    *
    * 仅支持 POST 请求，数据会转换成字符串传输，转换规则由请求头`Content-Type`决定：
@@ -233,14 +204,6 @@ interface CommonApiDescriptor {
    * 例如：`{a: 1, b: 2}`
    */
   body?: BodyType
-  /**
-   * 传入的`body`的数据类型
-   *
-   * 仅当 body 为`Object`类型且`process.env.NODE_ENV !== 'production'`时执行类型检查，类型检查时机发生在使用`transformRequest`进行数据转换之前
-   *
-   * 例如：`{ id: PropTypes.number.isRequired }`
-   */
-  bodyPropTypes?: { [key: string]: Validator<any> } | null
   /**
    * 响应的数据类型
    *

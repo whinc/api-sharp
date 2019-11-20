@@ -4,11 +4,8 @@ import { ApiSharp, defineApi, ApiDescriptor } from "../src"
 const projectList = defineApi({
   url: "http://xyz",
   method: "post",
-  body: {
-    a: 100
-  },
   bodyPropTypes: {
-    a: PropType.string
+    name: PropType.string
   }
 })
 
@@ -23,7 +20,7 @@ const apiSharp = new ApiSharp()
   let res2 = await apiSharp.request({
     ...projectList,
     body: {
-      a: 22
+      a: 100
     }
   })
   let res3 = await apiSharp.request({
