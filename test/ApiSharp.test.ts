@@ -546,6 +546,7 @@ describe("测试 ApiSharp.request()", () => {
     test("检查函数返回 false 时，抛出异常，错误消息为返回的 HTTP 状态码描述", async () => {
       const newPost = mockOnePost()
       expect.assertions(1)
+      const message = "balabala"
       try {
         await apiSharp.request({
           baseURL,
@@ -553,29 +554,15 @@ describe("测试 ApiSharp.request()", () => {
           method: "POST",
           body: newPost,
           // 这里使用 Symbol 比较必定返回 false
-          validateResponse: res =>
-            res.status >= 200 && res.status < 300 && res.data === (Symbol() as any)
+          validateResponse: res => {
+            return {
+              valid: res.status >= 200 && res.status < 300 && res.data === (Symbol() as any),
+              message: message
+            }
+          }
         })
       } catch (err) {
-        expect(err.message).toBe("Created")
-      }
-    })
-    test("检查函数返回 Error 对象时，抛出异常，错误对象为返回的 Error 对象", async () => {
-      const newPost = mockOnePost()
-      expect.assertions(1)
-      const _err = new Error("Invalid data")
-      try {
-        await apiSharp.request({
-          baseURL,
-          url: "/posts",
-          method: "POST",
-          body: newPost,
-          // 这里使用 Symbol 比较必定返回 false
-          validateResponse: res =>
-            res.status >= 200 && res.status < 300 && res.data === (Symbol() as any) ? true : _err
-        })
-      } catch (err) {
-        expect(err).toBe(_err)
+        expect(err.message).toBe(message)
       }
     })
   })

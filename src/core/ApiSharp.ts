@@ -1,13 +1,4 @@
-import * as PropTypes from "../PropTypes"
-import {
-  isString,
-  getSortedString,
-  identity,
-  invariant,
-  warning,
-  isPlainObject,
-  formatFullUrl
-} from "../utils"
+import { isString, getSortedString, identity, invariant, warning, formatFullUrl } from "../utils"
 import {
   ApiResponse,
   ProcessedApiDescriptor,
@@ -72,7 +63,9 @@ export const defaultOptions: Required<ApiSharpOptions> = {
   cacheTime: 5 * 60 * 1000,
   transformRequest: identity,
   transformResponse: identity,
-  validateResponse: res => res.status >= 200 && res.status < 300,
+  validateResponse: res => {
+    return { valid: res.status >= 200 && res.status < 300, message: res.statusText }
+  },
   enableRetry: false,
   retryTimes: 1,
   timeout: 0,
@@ -171,7 +164,16 @@ export class ApiSharp {
 
     // 处理请求返回情况
     const result = api.validateResponse(response)
-    if (result === true) {
+    if (__DEV__) {
+      console.assert(
+        typeof result === "object" && result && "valid" in result,
+        `validateResponse() 实际返回：${JSON.stringify(
+          result
+        )}，期望返回：{valid: boolean, message?: string}`
+      )
+    }
+
+    if (result.valid) {
       // 请求成功，缓存结果（如果本次结果来自缓存，则不更新缓存，避免缓存期无限延长）
       if (api.enableCache && cachedKey && !hitCache) {
         this.cache.set(cachedKey, response, api.cacheTime)
@@ -187,7 +189,7 @@ export class ApiSharp {
       } else {
         this.logResponseError(api, response.data)
         // __DEV__ && console.error(res)
-        throw result instanceof Error ? result : new Error(response.statusText)
+        throw new Error(result.message)
       }
     }
 
