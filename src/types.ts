@@ -122,6 +122,10 @@ interface BasicApiDescriptor<Query, Body> {
    */
   transformRequest?: (request: IRequest) => IRequest
   /**
+   * 转换响应数据
+   */
+  transformResponse?: <Data = any>(response: IResponse<Data>) => IResponse
+  /**
    * 检查响应数据是否有效
    *
    * 检查函数返回 true 表示成功，返回 false 表示失败（失败信息为 HTTP 状态码描述)，返回 Error 也表示失败（失败信息为 Error 中的错误消息）
@@ -129,10 +133,6 @@ interface BasicApiDescriptor<Query, Body> {
    * 默认：`(res) => res.status >= 200 && res.status < 300`
    */
   validateResponse?: <Data = any>(res: IResponse<Data>) => boolean | Error
-  /**
-   * 转换响应数据
-   */
-  transformResponse?: <Data = any>(response: IResponse<Data>) => IResponse
   /**
    * 开启缓存
    *
@@ -209,13 +209,17 @@ export type ProcessedApiDescriptor<Query = any, Body = any> = Required<ApiDescri
 /**
  * 请求参数
  *
- * 里面列出字段必存在，其他字段透传
+ * 下面列出的字段是显式支持的，其他字段透传给底层 HTTP 引擎
  */
 export type IRequest = {
-  url: string
+  /**
+   * 完整的 URL，包含查询参数，例如 http://xyz.com/a/b/c?x=1&y=2
+   */
+  fullUrl: string
   method: HttpMethod
   body: Record<string, any>
-  headers: Record<string, any>
+  query: Record<string, string>
+  headers: Record<string, string>
   timeout: number
   responseType: "json" | "text"
   [key: string]: any

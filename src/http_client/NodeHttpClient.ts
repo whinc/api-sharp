@@ -25,7 +25,7 @@ export default class NodeHttpClient implements IHttpClient {
 
       let _data
       const clientRequest = http.request(
-        options.url,
+        options.fullUrl,
         {
           method: options.method,
           headers: {
@@ -45,7 +45,7 @@ export default class NodeHttpClient implements IHttpClient {
               try {
                 _data = JSON.parse(_data)
               } catch (error) {
-                __DEV__ && console.warn(options.responseType, error)
+                __DEV__ && console.warn(`parse json data failed. origin data: "${_data}"`, error)
                 _data = null
               }
             }

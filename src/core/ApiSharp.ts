@@ -14,7 +14,8 @@ import {
   LogType,
   ApiDescriptor,
   HttpMethod,
-  IResponse
+  IResponse,
+  IRequest
 } from "../types"
 import { ICache, MemoryCache } from "../cache"
 import { WebXhrClient, IHttpClient } from "../http_client"
@@ -110,14 +111,16 @@ export class ApiSharp {
    */
   async request<T = any>(_api: ApiDescriptor | string): Promise<ApiResponse<T>> {
     const api = this.processApi(_api)
+    const requestConfig: IRequest = this.castRequest(api)
 
     // 转换请求
-    Object.assign(api, api.transformRequest(api))
+    Object.assign(api, api.transformRequest(requestConfig))
 
     this.logRequest(api)
 
     // 处理 mock 数据
     if (api.enableMock) {
+      // TODO: 使用 setTimeout 模拟异步返回
       return {
         data: api.mockData,
         from: "mock",
@@ -140,10 +143,10 @@ export class ApiSharp {
         requestPromise = Promise.resolve(cachedRes)
         hitCache = true
       } else {
-        requestPromise = this.sendRequest<T>(api)
+        requestPromise = this.httpClient.request<T>(requestConfig)
       }
     } else {
-      requestPromise = this.sendRequest<T>(api)
+      requestPromise = this.httpClient.request<T>(requestConfig)
     }
 
     let response: IResponse<T>
@@ -214,14 +217,6 @@ export class ApiSharp {
     return this.cache.clear()
   }
 
-  private sendRequest<T>(api: ProcessedApiDescriptor): Promise<IResponse<T>> {
-    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.query : null)
-    return this.httpClient.request({
-      ...api,
-      url: fullUrl
-    })
-  }
-
   private generateCachedKey(api: ApiDescriptor) {
     return `${api.method} ${api.baseURL}${api.url}?${getSortedString(api.query)}`
   }
@@ -247,7 +242,10 @@ export class ApiSharp {
   }
 
   /**
-   * 预处理接口，设置默认值、进行类型检查、数据转换等
+   * 处理接口描述对象
+   * 1. 确定默认值
+   * 2. 参数类型检查
+   * 3. 数据转换
    */
   public processApi(api: ApiDescriptor | string): ProcessedApiDescriptor {
     invariant(api, "api 为空")
@@ -290,6 +288,11 @@ export class ApiSharp {
       }
     }
     return _api
+  }
+
+  private castRequest(api: ProcessedApiDescriptor): IRequest {
+    const fullUrl = formatFullUrl(api.baseURL, api.url, api.method === "GET" ? api.query : {})
+    return { ...api, fullUrl }
   }
 
   private logRequest(api: ProcessedApiDescriptor) {

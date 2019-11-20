@@ -51,7 +51,11 @@ export function encodeQuery(query: object | null): string {
   }, "")
 }
 
-export function formatFullUrl(baseURL: string, url: string, query: any): string {
+export function formatFullUrl(
+  baseURL: string,
+  url: string,
+  query: Record<string, string> = {}
+): string {
   const queryString = query ? encodeQuery(query) : ""
   let fullUrl = baseURL + url
   if (fullUrl.includes("?")) {

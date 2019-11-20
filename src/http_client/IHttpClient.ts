@@ -1,5 +1,5 @@
 import { IRequest, IResponse } from "../types"
 
 export default interface IHttpClient {
-  request(options: IRequest): Promise<IResponse>
+  request<T>(options: IRequest): Promise<IResponse<T>>
 }

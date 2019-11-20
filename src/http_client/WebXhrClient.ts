@@ -18,10 +18,11 @@ export default class WebXhrClient implements IHttpClient {
       // 暂存返回数据
       let _response: IResponse
       const xhr = new XMLHttpRequest()
-      xhr.open(options.method, options.url, true)
+      xhr.open(options.method, options.fullUrl, true)
 
-      // 跨域请求带凭证
+      // 设置凭证
       xhr.withCredentials = options.withCredentials || false
+
       // 设置超时
       xhr.timeout = options.timeout
 
@@ -52,18 +53,9 @@ export default class WebXhrClient implements IHttpClient {
       // 设置请求头
       Object.keys(options.headers).forEach(key => xhr.setRequestHeader(key, options.headers[key]))
 
-      /**
-       * 事件触发顺序：readystatechange -> timeout -> loadend
-       * 先处理特殊情况，最后再处理一般情况，否则 Promise 被 resolve 后，后续遇到特殊情况时无法修改状态
-       * 例如：请求超时后，先触发 readystatechange 事件，后触发 timeout 事件，如果在 readystatechange 监听函数中处理返回
-       * 则 timeout 错误就无法返回了，因为 Promise 只能被填充一次。
-       */
-      // xhr.onloadend = function () {
-      //   resolve(_response)
-      // }
-
-      // 设置响应数据类型
+      // 设置响应类型
       xhr.responseType = options.responseType
+
       xhr.onreadystatechange = function() {
         if (this.readyState === XMLHttpRequest.DONE) {
           const headers = formatResponseHeaders(this.getAllResponseHeaders())
@@ -73,6 +65,7 @@ export default class WebXhrClient implements IHttpClient {
             statusText: this.statusText,
             headers
           }
+          // 保存响应结果，待 XHR 结束后返回
           _response = response
         }
       }
