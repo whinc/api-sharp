@@ -67,7 +67,7 @@ export const defaultOptions: Required<ApiSharpOptions> = {
     return { valid: res.status >= 200 && res.status < 300, message: res.statusText }
   },
   enableRetry: false,
-  retryTimes: 1,
+  retryTimes: 0,
   timeout: 0,
   enableLog: process.env.NODE_ENV !== "production",
   formatLog: (type, api, data) => {

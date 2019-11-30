@@ -107,6 +107,14 @@ interface BasicApiDescriptor<Query, Body> {
    */
   validateResponse?: <Data = any>(response: IResponse<Data>) => { valid: boolean; message?: string }
   /**
+   * 接口超时时间，单位毫秒
+   *
+   * 从发出请求起，如果 timeout 毫秒后接口未返回，接口调用失败。
+   *
+   * 默认`60*1000`ms
+   */
+  timeout?: number
+  /**
    * 开启缓存
    *
    * 开启后，优先返回缓存，如果无可用缓存则请求网络，并缓存返回结果
@@ -145,17 +153,9 @@ interface BasicApiDescriptor<Query, Body> {
   /**
    * 重试最大次数
    *
-   * 默认`1`
+   * 默认`0`
    */
   retryTimes?: number
-  /**
-   * 接口超时时间，单位毫秒
-   *
-   * 从发出请求起，如果 timeout 毫秒后接口未返回，接口调用失败。
-   *
-   * 默认`60*1000`ms
-   */
-  timeout?: number
   /**
    * 开启控制台日志
    *

@@ -237,8 +237,8 @@ describe("测试 ApiSharp.processApi() 方法", () => {
 
   describe("测试 api.retryTimes 取值", () => {
     const api: ApiDescriptor = { url: baseURL }
-    test("api.retryTimes 默认为 1", () => {
-      expect(apiSharp.processApi(api).retryTimes).toBe(1)
+    test("api.retryTimes 默认为 0", () => {
+      expect(apiSharp.processApi(api).retryTimes).toBe(0)
     })
   })
 
