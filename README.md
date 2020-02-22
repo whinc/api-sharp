@@ -326,43 +326,6 @@ export interface IResponse<T = any> {
 
 [CHANGELOG](./CHANGELOG.md)
 
-## 参与共建
-
-克隆项目后，切换到项目根目录下，并安装依赖
-
-```bash
-$ git clone <path_to_project>
-$ cd <path_to_project>
-$ npm install
-```
-
-下面两条指令分别启动 node API 服务和 jest 测试
-
-```bash
-$ npm run server
-$ npm run test:watch
-```
-
-执行后便可以在`src`目录下修改源码，在`test`目录编写测试用例进行测试
-
-项目目录结构如下：
-
-```
-docs                // 文档
-src                 // 源码
-  |--cache          // 缓存实现
-  |--http_client    // HTTP请求实现
-  |--types          // 内部类型定义
-test
-  |--api_sharp      // 单元测试
-  |--server         // 接口测试服务
-types               // 全局类型定义
-babel.config.js     // babel 配置
-package.json        // 包配置
-tsconfig.json       // TS 编译配置
-
-```
-
 ## LICENSE
 
 [MIT](./LICENSE)
