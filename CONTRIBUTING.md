@@ -30,3 +30,5 @@ tsconfig.json       // TS 编译配置
 
 ## 发布
 
+1. 合并代码到 master 分支
+2. 推送到远程仓库，触发 circleci 发布
