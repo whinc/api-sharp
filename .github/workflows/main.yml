@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: 
+      - master
+
+jobs:
+  build:
+    name: deploy app
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Setup Node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
+        key: npm-${{ hashFiles('package-lock.json') }}
+    - name: Install dependencies
+      run: npm install
+    - name: Build package
+      run: npm run build
+    - name: Publish package
+      run: npm run release
+      env:
+        GITHUB_TOKEN: ${{secrets.ACTIONS_GITHUB_TOKEN}}
