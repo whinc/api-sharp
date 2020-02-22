@@ -30,3 +30,4 @@ jobs:
       run: npm run release
       env:
         GITHUB_TOKEN: ${{secrets.ACTIONS_GITHUB_TOKEN}}
+        NPM_TOKEN: ${{secrets.NPM_TOKEN}}
