@@ -2,9 +2,7 @@ import axios from "axios"
 import {
   ApiSharp,
   defaultOptions,
-  ApiSharpOptions,
-  ApiDescriptor,
-  ProcessedApiDescriptor
+  ApiConfig
 } from "../src"
 import { WebXhrClient, HttpMethod } from "../src"
 import { stringTable } from "../src/utils"
@@ -90,7 +88,7 @@ describe("测试 new ApiSharp(options) 配置", () => {
   test("配置项未出现在 ApiSharp.request() 和 new ApiSharp() 中时，使用默认配置项", () => {
     const api = { url: "http://anything" }
     const apiSharp: any = new ApiSharp()
-    const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
+    const _api: Required<ApiConfig> = apiSharp.processApiConfig(api)
     const ignoreKeys = ["url"]
     Object.keys(_api)
       .filter(key => !ignoreKeys.includes(key))
@@ -101,9 +99,9 @@ describe("测试 new ApiSharp(options) 配置", () => {
 
   test("配置项出现在 ApiSharp.request()，但出现在 new ApiSharp() 中时，使用 new ApiSharp() 配置项", () => {
     const api = { url: "http://anything" }
-    const options: ApiSharpOptions = defaultOptions
+    const options: ApiConfig = defaultOptions
     const apiSharp: any = new ApiSharp(options)
-    const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
+    const _api: Required<ApiConfig> = apiSharp.processApiConfig(api)
     const ignoreKeys = ["url"]
     Object.keys(_api)
       .filter(key => !ignoreKeys.includes(key))
@@ -117,20 +115,20 @@ describe("测试 new ApiSharp(options) 配置", () => {
       })
   })
   test("配置项同时出现在 ApiSharp.request() 和 new ApiSharp() 中时，使用 ApiSharp.request() 配置，同时部分配置项进行合并", () => {
-    const api: ApiDescriptor = {
+    const api: ApiConfig = {
       ...defaultOptions,
       url: "http://anything",
       headers: {
         a: "a"
       }
     }
-    const options: ApiSharpOptions = {
+    const options: ApiConfig = {
       headers: {
         b: "b"
       }
     }
     const apiSharp = new ApiSharp(options)
-    const _api: ProcessedApiDescriptor = apiSharp.processApi(api)
+    const _api: Required<ApiConfig> = apiSharp.processApiConfig(api)
     const ignoreKeys = ["headers"]
     Object.keys(_api)
       .filter(key => !ignoreKeys.includes(key))
@@ -151,15 +149,15 @@ describe("测试 new ApiSharp(options) 配置", () => {
   })
 })
 
-describe("测试 ApiSharp.processApi() 方法", () => {
+describe("测试 apiSharp.processApiConfig() 方法", () => {
   describe("测试 api 的取值", () => {
     test("api === null 时抛出异常", () => {
       const api = null
-      expect(() => apiSharp.processApi(api!)).toThrow()
+      expect(() => apiSharp.processApiConfig(api!)).toThrow()
     })
     test("api 为 string 时，等价于 {url: string}", () => {
       const api = "http://xyz.com"
-      const _api = apiSharp.processApi(api)
+      const _api = apiSharp.processApiConfig(api)
       expect(_api).toHaveProperty("url", api)
     })
   })
@@ -167,119 +165,110 @@ describe("测试 ApiSharp.processApi() 方法", () => {
   describe("测试 api.url 取值", () => {
     test("api.url 为空(空串/undefined/null)时抛出异常", () => {
       const api = {}
-      expect(() => apiSharp.processApi({ ...api, url: undefined! })).toThrow()
-      expect(() => apiSharp.processApi({ ...api, url: null! })).toThrow()
-      expect(() => apiSharp.processApi({ ...api, url: "" })).toThrow()
+      expect(() => apiSharp.processApiConfig({ ...api, url: undefined! })).toThrow()
+      expect(() => apiSharp.processApiConfig({ ...api, url: null! })).toThrow()
+      expect(() => apiSharp.processApiConfig({ ...api, url: "" })).toThrow()
     })
   })
 
   describe("测试 api.method 取值", () => {
     const api: any = { url: "http://www.test.com" }
     test('api.method === undefined 时使用 "GET" 方法', () => {
-      expect(apiSharp.processApi({ ...api }).method).toBe("GET")
+      expect(apiSharp.processApiConfig({ ...api }).method).toBe("GET")
     })
     test('api.method === "GET" 时使用 "GET" 方法', () => {
-      expect(apiSharp.processApi({ ...api, method: "GET" }).method).toBe("GET")
+      expect(apiSharp.processApiConfig({ ...api, method: "GET" }).method).toBe("GET")
     })
     test('api.method === "get" 时使用 "GET" 方法', () => {
-      expect(apiSharp.processApi({ ...api, method: "get" }).method).toBe("GET")
+      expect(apiSharp.processApiConfig({ ...api, method: "get" }).method).toBe("GET")
     })
     test('api.method === "POST" 时使用 "POST" 方法', () => {
-      expect(apiSharp.processApi({ ...api, method: "POST" }).method).toBe("POST")
+      expect(apiSharp.processApiConfig({ ...api, method: "POST" }).method).toBe("POST")
     })
     test('api.method === "post" 时使用 "POST" 方法', () => {
-      expect(apiSharp.processApi({ ...api, method: "post" }).method).toBe("POST")
+      expect(apiSharp.processApiConfig({ ...api, method: "post" }).method).toBe("POST")
     })
     test('api.method === "options" 时使用 "OPTIONS" 方法', () => {
-      expect(apiSharp.processApi({ ...api, method: "options" }).method).toBe("OPTIONS")
-    })
-  })
-
-  test("测试 api.description 取值", () => {
-    const api: ApiDescriptor = { url: "http://www.test.com" }
-    const values = [[undefined, ""], ["", ""], ["hello", "hello"]]
-    values.forEach(([received, expected]) => {
-      api.description = received
-      expect(apiSharp.processApi(api).description).toBe(expected)
+      expect(apiSharp.processApiConfig({ ...api, method: "options" }).method).toBe("OPTIONS")
     })
   })
 
   describe("测试 api.enableMock 取值", () => {
-    const api: ApiDescriptor = { url: baseURL }
+    const api: ApiConfig = { url: baseURL }
     test("api.enableMock  默认为 false", () => {
-      expect(apiSharp.processApi(api).enableMock).toBeFalsy()
+      expect(apiSharp.processApiConfig(api).enableMock).toBeFalsy()
     })
     test("api.enableMock 为 true，当设置为 true 后", () => {
-      expect(apiSharp.processApi({ ...api, enableMock: true }).enableMock).toBeTruthy()
+      expect(apiSharp.processApiConfig({ ...api, enableMock: true }).enableMock).toBeTruthy()
     })
   })
 
   describe("测试 api.mockData 取值", () => {
-    const api: ApiDescriptor = { url: baseURL }
+    const api: ApiConfig = { url: baseURL }
     const data = { a: 1 }
     test("api.mockData 默认为 undefined", () => {
-      expect(apiSharp.processApi(api).mockData).toBeUndefined()
+      expect(apiSharp.processApiConfig(api).mockData).toBeUndefined()
     })
     test(`api.mockData 为 ${JSON.stringify(data)}，当设置为 ${JSON.stringify(data)} 后`, () => {
-      expect(apiSharp.processApi({ ...api, mockData: data }).mockData).toEqual(data)
+      expect(apiSharp.processApiConfig({ ...api, mockData: data }).mockData).toEqual(data)
     })
   })
 
   describe("测试 api.enableRetry 取值", () => {
-    const api: ApiDescriptor = { url: baseURL }
+    const api: ApiConfig = { url: baseURL }
     test("api.enableRetry 默认为 false", () => {
-      expect(apiSharp.processApi(api).enableRetry).toBeFalsy()
+      expect(apiSharp.processApiConfig(api).enableRetry).toBeFalsy()
     })
     test("api.enableRetry 为 true，当设置为 true 后", () => {
-      expect(apiSharp.processApi({ ...api, enableRetry: true }).enableRetry).toBeTruthy()
+      expect(apiSharp.processApiConfig({ ...api, enableRetry: true }).enableRetry).toBeTruthy()
     })
   })
 
   describe("测试 api.retryTimes 取值", () => {
-    const api: ApiDescriptor = { url: baseURL }
+    const api: ApiConfig = { url: baseURL }
     test("api.retryTimes 默认为 0", () => {
-      expect(apiSharp.processApi(api).retryTimes).toBe(0)
+      expect(apiSharp.processApiConfig(api).retryTimes).toBe(0)
     })
   })
 
   describe("测试 api.search", () => {
-    const api: ApiDescriptor = { url: baseURL }
+    const api: ApiConfig = { url: baseURL }
     test("api.search 默认为 null", () => {
-      expect(apiSharp.processApi(api).query).toBeNull()
+      expect(apiSharp.processApiConfig(api).params).toBeNull()
     })
   })
 
   describe("测试 api.body", () => {
-    const api: ApiDescriptor = { url: baseURL }
+    const api: ApiConfig = { url: baseURL }
     test("api.body 默认为 null", () => {
-      expect(apiSharp.processApi(api).body).toBeNull()
+      expect(apiSharp.processApiConfig(api).body).toBeNull()
     })
   })
 
   test("transformRequest", () => {
-    const api: ApiDescriptor = {
+    const apiConfig: ApiConfig = {
       url: baseURL,
-      transformRequest: request => ({ ...request, query: { name: "jim" } })
+      transformRequest: request => ({ ...request, params: { name: "jim" } })
     }
-    let _api = apiSharp.processApi(api)
-    Object.assign(_api, _api.transformRequest(_api))
-    expect(_api.query).toEqual({ name: "jim" })
+    const _apiConfig = apiSharp.processApiConfig(apiConfig)
+    const requestConfig = apiSharp.createRequestConfig(_apiConfig)
+    expect(requestConfig.params).toEqual({ name: "jim" })
   })
 
   describe("测试 api.responseType", () => {
     test("默认值是 json", () => {
-      const api: ApiDescriptor = { url: baseURL }
-      const _api = apiSharp.processApi(api)
+      const api: ApiConfig = { url: baseURL }
+      const _api = apiSharp.processApiConfig(api)
       expect(_api.responseType).toBe("json")
     })
     test("指定值是 json", () => {
-      const api: ApiDescriptor = { url: baseURL, responseType: "json" }
-      const _api = apiSharp.processApi(api)
+      const api: ApiConfig = { url: baseURL, responseType: "json" }
+      const _api = apiSharp.processApiConfig(api)
       expect(_api.responseType).toBe("json")
     })
     test("指定值是 text", () => {
-      const api: ApiDescriptor = { url: baseURL, responseType: "text" }
-      const _api = apiSharp.processApi(api)
+      const api: ApiConfig = { url: baseURL, responseType: "text" }
+      const _api = apiSharp.processApiConfig(api)
       expect(_api.responseType).toBe("text")
     })
   })
@@ -376,7 +365,7 @@ describe("测试 ApiSharp.request()", () => {
         url: "/posts/",
         enableCache: true,
         cacheTime: Infinity,
-        query: {
+        params: {
           id: response.data.id
         }
       }
@@ -391,7 +380,7 @@ describe("测试 ApiSharp.request()", () => {
       const api = {
         baseURL,
         url: "/posts/?name=whinc",
-        query: {
+        params: {
           id: response.data.id
         }
       }
@@ -603,7 +592,7 @@ describe("测试 ApiSharp.request()", () => {
         await apiSharp.request({
           baseURL,
           url: "/delay",
-          query: {
+          params: {
             delay: 10
           },
           timeout: 1
@@ -672,7 +661,7 @@ describe("测试 ApiSharp.request()", () => {
       const res = await apiSharp.request({
         baseURL,
         url: "/echo/query",
-        query: {
+        params: {
           a: 1,
           b: 2
         }

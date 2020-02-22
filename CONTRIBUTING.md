@@ -24,7 +24,9 @@ tsconfig.json       // TS 编译配置
 
 ## 开发
 
-1. 启动 node 模拟 API 服务端，执行`npm run server`
+1. 启动 node 模拟 API 服务端，执行`npm run test:server`
 2. 启动测试，执行`npm run test:watch`
 3. 在`src`目录下修改代码，在`test`目录编写测试用例
+
+## 发布
 

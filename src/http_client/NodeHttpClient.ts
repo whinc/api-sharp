@@ -1,5 +1,5 @@
 import http from "http"
-import IHttpClient from "./IHttpClient"
+import {IHttpClient} from "../types"
 import { IRequest, IResponse } from "../types"
 import { isPlainObject, serializeSearch, isString, stringTable } from "../utils"
 

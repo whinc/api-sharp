@@ -15,28 +15,29 @@
     "start": "tsdx watch",
     "build": "tsdx build --format cjs,esm,umd --name ApiSharp",
     "test": "tsdx test",
+    "test:server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
     "test:watch": "tsdx test --watch",
-    "lint": "tsdx lint",
-    "print:coverage": "jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage",
-    "coverage": "jest --coverage --coverageReporters=text-lcov | coveralls",
-    "server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
+    "test:coverage": "jest --coverage --coverageReporters=text-lcov | coveralls",
+    "lint": "tsdx lint src",
+    "lint:fix": "tsdx lint src --fix",
+    "lint:types": "tsc --noEmit",
     "pm2:server": "pm2 start npm --no-autorestart --name start_server -- run server",
     "debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
-    "tsc:check": "tsc --noEmit",
     "release": "semantic-release"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "pretty-quick --staged"
+      "pre-commit": "npm run lint:types && pretty-quick --staged"
     }
   },
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "core-js": "^3.2.1"
+  "peerDependencies": {
+    "core-js": "^3.0.0"
   },
   "devDependencies": {
+    "core-js": "^3.2.1",
     "@babel/core": "^7.6.3",
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/preset-env": "^7.6.3",

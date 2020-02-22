@@ -21,18 +21,24 @@ export enum LogType {
   ResponseCache
 }
 
-export type ApiDescriptor<
-  Query = Record<string, any>,
-  Body = Record<string, any>
-> = BasicApiDescriptor<Query, Body> & WebXhrApiDescriptor
+export interface ICache<V = any, K = string> {
+  has(key: K): boolean
+  get(key: K): V | undefined
+  set(key: K, value: V, timeout: number): V
+  delete(key: K): boolean
+  clear(): void
+}
 
-interface BasicApiDescriptor<Query, Body> {
+
+export type ApiConfig = BaseApiConfig & XHRApiConfig
+
+interface BaseApiConfig {
   /**
    * 请求地址
    *
    * 支持相对地址（如`"/a/b/c"`）和绝对地址（如`"http://xyz.com/a/b/c"`）
    */
-  url: string
+  url?: string
   /**
    * 基地址
    *
@@ -70,7 +76,7 @@ interface BasicApiDescriptor<Query, Body> {
    *
    * 例如：`{a: 1, b: 2}`会转换成`"a=1&b=2"`
    */
-  query?: Query | null
+  params?: any
   /**
    * 请求体中的数据
    *
@@ -79,7 +85,7 @@ interface BasicApiDescriptor<Query, Body> {
    *
    * 例如：`{a: 1, b: 2}`
    */
-  body?: Body | null
+  body?: any
   /**
    * 响应的数据类型
    *
@@ -98,14 +104,14 @@ interface BasicApiDescriptor<Query, Body> {
   /**
    * 转换响应数据
    */
-  transformResponse?: <Data = any>(response: IResponse<Data>) => IResponse
+  transformResponse?: <T extends any = any>(response: IResponse<T>) => IResponse
   /**
    * 检查响应数据是否有效
    *
    * @callback
    * @default response => ({valid: response.status >= 200 && response.status < 300, message: response.statusText})
    */
-  validateResponse?: <Data = any>(response: IResponse<Data>) => { valid: boolean; message?: string }
+  validateResponse?: <T extends any = any>(response: IResponse<T>) => { valid: boolean; message?: string }
   /**
    * 接口超时时间，单位毫秒
    *
@@ -165,10 +171,18 @@ interface BasicApiDescriptor<Query, Body> {
   /**
    * 格式化日志
    */
-  formatLog?: (type: LogType, api: ProcessedApiDescriptor<Query, Body>, data?: any) => void
+  formatLog?: (type: LogType, api: Required<ApiConfig>, data?: any) => void
+  /**
+   * 替换内部的 http 请求实现
+   */
+  httpClient?: IHttpClient
+  /**
+   * 替换内部的缓存实现
+   */
+  cache?: ICache<IResponse>
 }
 
-interface WebXhrApiDescriptor {
+interface XHRApiConfig {
   /**
    * 跨域请求时是否带上用户信息（如Cookie和认证的HTTP头）
    *
@@ -177,7 +191,9 @@ interface WebXhrApiDescriptor {
   withCredentials?: boolean
 }
 
-export type ProcessedApiDescriptor<Query = any, Body = any> = Required<ApiDescriptor<Query, Body>>
+export interface IHttpClient {
+  request<T>(options: IRequest): Promise<IResponse<T>>
+}
 
 /**
  * 请求参数
@@ -191,12 +207,13 @@ export type IRequest = {
   fullUrl: string
   method: HttpMethod
   body: Record<string, any>
-  query: Record<string, string>
+  params: Record<string, string>
   headers: Record<string, string>
   timeout: number
   responseType: "json" | "text"
   [key: string]: any
 }
+
 
 export type IResponse<T = any> = {
   /**
@@ -222,7 +239,7 @@ export type ApiResponse<T = any> = IResponse<T> & {
   /**
    * 请求接口描述符
    */
-  api: ProcessedApiDescriptor
+  api: ApiConfig
   /**
    * 响应数据的来源
    */

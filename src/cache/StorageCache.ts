@@ -1,5 +1,5 @@
-import ICache from "./ICache"
-import { isNumber } from '../utils'
+import {ICache} from "../types"
+import { isNumber } from "../utils"
 
 interface StorageCacheItem<T = any> {
   data: T
@@ -39,7 +39,7 @@ export default class StorageCache<V> implements ICache<V> {
       // 解析 string -> value
       const cacheItem = JSON.parse(strCacheItem) as StorageCacheItem<V>
       // 超时
-      if (!cacheItem.data || (Date.now() - cacheItem.cacheTime) > cacheItem.timeout) {
+      if (!cacheItem.data || Date.now() - cacheItem.cacheTime > cacheItem.timeout) {
         return undefined
       }
       return cacheItem.data

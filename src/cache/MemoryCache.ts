@@ -1,9 +1,9 @@
-import ICache from "./ICache"
-import {isNumber} from '../utils'
+import { isNumber } from "../utils"
+import {ICache} from '../types'
 
 interface MemoryCacheItem<T = any> {
-  data: T,
-  timeout: number,
+  data: T
+  timeout: number
   cacheTime: number
 }
 
@@ -11,7 +11,7 @@ interface MemoryCacheItem<T = any> {
  * 基于内存的缓存
  */
 export default class MemoryCache<V> implements ICache<V> {
-  private cacheMap: {[key: string]: MemoryCacheItem<V>} = {}
+  private cacheMap: { [key: string]: MemoryCacheItem<V> } = {}
 
   // 数据是否超时
   has(key: string): boolean {
@@ -25,7 +25,7 @@ export default class MemoryCache<V> implements ICache<V> {
   get(key: string): V | undefined {
     const value = this.cacheMap[key]
 
-    if (!value || (Date.now() - value.cacheTime) > value.timeout) {
+    if (!value || Date.now() - value.cacheTime > value.timeout) {
       delete this.cacheMap[key]
       return undefined
     } else {

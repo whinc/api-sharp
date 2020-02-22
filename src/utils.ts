@@ -54,7 +54,7 @@ export function encodeQuery(query: object | null): string {
 export function formatFullUrl(
   baseURL: string,
   url: string,
-  query: Record<string, string> = {}
+  query: Record<string, any> = {}
 ): string {
   const queryString = query ? encodeQuery(query) : ""
   let fullUrl = baseURL + url
