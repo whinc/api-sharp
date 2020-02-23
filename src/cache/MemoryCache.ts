@@ -10,7 +10,7 @@ interface MemoryCacheItem<T = any> {
 /**
  * 基于内存的缓存
  */
-export default class MemoryCache<V> implements ICache<V> {
+export class MemoryCache<V> implements ICache<V> {
   private cacheMap: { [key: string]: MemoryCacheItem<V> } = {}
 
   // 数据是否超时

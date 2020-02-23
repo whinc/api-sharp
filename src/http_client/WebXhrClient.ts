@@ -12,7 +12,7 @@ export interface WebXhrRequest extends IRequest {
   withCredentials?: boolean
 }
 
-export default class WebXhrClient implements IHttpClient {
+export class WebXhrClient implements IHttpClient {
   request(options: WebXhrRequest): Promise<IResponse> {
     return new Promise((resolve, reject) => {
       // 暂存返回数据

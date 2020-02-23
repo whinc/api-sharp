@@ -15,7 +15,7 @@ export enum StorageType {
 /**
  * 基于持久化存储的缓存
  */
-export default class StorageCache<V> implements ICache<V> {
+export class StorageCache<V> implements ICache<V> {
   private readonly storage: Storage
 
   constructor(type: StorageType) {

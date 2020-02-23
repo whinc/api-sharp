@@ -104,14 +104,14 @@ interface BaseApiConfig {
   /**
    * 转换响应数据
    */
-  transformResponse?: <T extends any = any>(response: IResponse<T>) => IResponse
+  transformResponse?: <T extends any = any>(response: IResponse<T>) => IResponse<T>
   /**
    * 检查响应数据是否有效
    *
    * @callback
    * @default response => ({valid: response.status >= 200 && response.status < 300, message: response.statusText})
    */
-  validateResponse?: <T extends any = any>(response: IResponse<T>) => { valid: boolean; message?: string }
+  validateResponse?: <T extends any = any>(response: IResponse<T>) => boolean | string | void
   /**
    * 接口超时时间，单位毫秒
    *
@@ -206,8 +206,8 @@ export type IRequest = {
    */
   fullUrl: string
   method: HttpMethod
-  body: Record<string, any>
-  params: Record<string, string>
+  body: any,
+  params: any,
   headers: Record<string, string>
   timeout: number
   responseType: "json" | "text"

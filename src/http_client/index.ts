@@ -1,2 +1,2 @@
-export { default as WebXhrClient } from "./WebXhrClient"
-export { default as NodeHttpClient } from "./NodeHttpClient"
+export { WebXhrClient } from "./WebXhrClient"
+export { NodeHttpClient } from "./NodeHttpClient"

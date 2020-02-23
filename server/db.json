@@ -1,12 +1,5 @@
 {
-  "posts": [
-    {
-      "title": "post",
-      "author": "jack",
-      "date": 1582385865303,
-      "id": 1
-    }
-  ],
+  "posts": [],
   "comments": [],
   "profile": {
     "name": "typicode"

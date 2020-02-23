@@ -1,2 +1,2 @@
-export { default as MemoryCache } from "./MemoryCache"
-export { default as StorageCache, StorageType } from "./StorageCache"
+export { MemoryCache } from "./MemoryCache"
+export { StorageCache, StorageType } from "./StorageCache"

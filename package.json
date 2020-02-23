@@ -33,11 +33,10 @@
   "publishConfig": {
     "access": "public"
   },
-  "peerDependencies": {
-    "core-js": "^3.0.0"
+  "dependencies": {
+    "core-js": "^3.2.1"
   },
   "devDependencies": {
-    "core-js": "^3.2.1",
     "@babel/core": "^7.6.3",
     "@babel/plugin-proposal-class-properties": "^7.5.5",
     "@babel/preset-env": "^7.6.3",

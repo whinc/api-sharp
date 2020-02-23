@@ -6,6 +6,36 @@ import {
 } from "../src"
 import { WebXhrClient, HttpMethod } from "../src"
 import { stringTable } from "../src/utils"
+import { response } from "express"
+
+function testTypes() {
+  const apiSharp = new ApiSharp()
+  apiSharp.request({
+    url: '',
+    baseURL: '',
+    method: 'post',
+    headers: {
+      a: 'b'
+    },
+    description: '',
+    params: {a: 'b'},
+    body: {a: 'b'},
+    responseType: 'json',
+    transformRequest: request => {
+      return request
+    },
+    transformResponse: response => {
+      return response
+    },
+    validateResponse: response => {
+      if (response.status < 200 || response.status > 300) {
+        return 'hello'
+      }
+      return true
+      // return undefined
+    }
+  })
+}
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
 const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
@@ -534,7 +564,6 @@ describe("测试 ApiSharp.request()", () => {
     })
     test("检查函数返回 false 时，抛出异常，错误消息为返回的 HTTP 状态码描述", async () => {
       const newPost = mockOnePost()
-      expect.assertions(1)
       const message = "balabala"
       try {
         await apiSharp.request({
@@ -544,9 +573,8 @@ describe("测试 ApiSharp.request()", () => {
           body: newPost,
           // 这里使用 Symbol 比较必定返回 false
           validateResponse: res => {
-            return {
-              valid: res.status >= 200 && res.status < 300 && res.data === (Symbol() as any),
-              message: message
+            if (res.status >= 200 && res.status < 300 && res.data === (Symbol() as any)) {
+              return message
             }
           }
         })

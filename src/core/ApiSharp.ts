@@ -1,4 +1,4 @@
-import { isString, getSortedString, identity, invariant, warning, formatFullUrl } from "../utils"
+import { isString, getSortedString, identity, invariant, warning, formatFullUrl, isVoid } from "../utils"
 import { ApiResponse, LogType, ApiConfig, HttpMethod, IResponse, IRequest, IHttpClient, ICache } from "../types"
 import { MemoryCache } from "../cache"
 import { WebXhrClient } from "../http_client"
@@ -41,7 +41,10 @@ export const defaultOptions: Required<ApiConfig> = {
   transformRequest: identity,
   transformResponse: identity,
   validateResponse: res => {
-    return { valid: res.status >= 200 && res.status < 300, message: res.statusText }
+    if (res.status < 200 && res.status >= 300) {
+      return res.statusText
+    }
+    return true
   },
   enableRetry: false,
   retryTimes: 0,
@@ -84,22 +87,22 @@ export class ApiSharp {
    * @param api - 接口描述符
    * @return 响应数据
    */
-  async request<T = any>(_apiConfig: ApiConfig | string): Promise<ApiResponse<T>> {
-    const apiConfig = this.processApiConfig(_apiConfig)
-    const requestConfig: IRequest = this.createRequestConfig(apiConfig)
+  async request<T = any>(apiConfig: ApiConfig | string): Promise<ApiResponse<T>> {
+    const _apiConfig = this.processApiConfig(apiConfig)
+    const requestConfig: IRequest = this.createRequestConfig(_apiConfig)
 
     // 转换请求
-    Object.assign(apiConfig, requestConfig)
+    Object.assign(_apiConfig, requestConfig)
 
-    this.logRequest(apiConfig)
+    this.logRequest(_apiConfig)
 
     // 处理 mock 数据
-    if (apiConfig.enableMock) {
+    if (_apiConfig.enableMock) {
       // TODO: 使用 setTimeout 模拟异步返回
       return {
-        data: apiConfig.mockData,
+        data: _apiConfig.mockData,
         from: "mock",
-        api: apiConfig,
+        api: _apiConfig,
         headers: {},
         status: 200,
         statusText: "OK"
@@ -111,8 +114,8 @@ export class ApiSharp {
     let hitCache = false
 
     // 处理缓存
-    if (apiConfig.enableCache) {
-      cachedKey = this.generateCachedKey(apiConfig)
+    if (_apiConfig.enableCache) {
+      cachedKey = this.generateCachedKey(_apiConfig)
       if (this.cache.has(cachedKey)) {
         const cachedRes = this.cache.get(cachedKey)!
         requestPromise = Promise.resolve(cachedRes)
@@ -135,62 +138,56 @@ export class ApiSharp {
       // 请求失败或超时，都会抛出异常并被捕获处理
 
       // 请求失败时删除缓存
-      if (apiConfig.enableCache && cachedKey) {
+      if (_apiConfig.enableCache && cachedKey) {
         this.cache.delete(cachedKey)
       }
-      if (apiConfig.enableRetry && apiConfig.retryTimes >= 1) {
-        return this.request({ ...apiConfig, retryTimes: apiConfig.retryTimes - 1 })
+      if (_apiConfig.enableRetry && _apiConfig.retryTimes >= 1) {
+        return this.request({ ..._apiConfig, retryTimes: _apiConfig.retryTimes - 1 })
       } else {
-        this.logResponseError(err, apiConfig)
+        this.logResponseError(err, _apiConfig)
         throw err
       }
     }
 
     // 处理请求返回情况
-    const result = apiConfig.validateResponse(response)
-    if (__DEV__) {
-      console.assert(
-        typeof result === "object" && result && "valid" in result,
-        `validateResponse() 实际返回：${JSON.stringify(
-          result
-        )}，期望返回：{valid: boolean, message?: string}`
-      )
-    }
+    const result = _apiConfig.validateResponse(response)
+    const isValid = isVoid(result) ? true : (isString(result) ? false : !!result)
+    const message = isString(result) ? result : ''
 
-    if (result.valid) {
+    if (isValid) {
       // 请求成功，缓存结果（如果本次结果来自缓存，则不更新缓存，避免缓存期无限延长）
-      if (apiConfig.enableCache && cachedKey && !hitCache) {
-        this.cache.set(cachedKey, response, apiConfig.cacheTime)
+      if (_apiConfig.enableCache && cachedKey && !hitCache) {
+        this.cache.set(cachedKey, response, _apiConfig.cacheTime)
       }
     } else {
       // 请求失败，重置缓存
-      if (apiConfig.enableCache && cachedKey) {
+      if (_apiConfig.enableCache && cachedKey) {
         this.cache.delete(cachedKey)
       }
       // 失败重试
-      if (apiConfig.enableRetry && apiConfig.retryTimes >= 1) {
-        return this.request({ ...apiConfig, retryTimes: apiConfig.retryTimes - 1 })
+      if (_apiConfig.enableRetry && _apiConfig.retryTimes >= 1) {
+        return this.request({ ..._apiConfig, retryTimes: _apiConfig.retryTimes - 1 })
       } else {
-        this.logResponseError(apiConfig, response.data)
+        this.logResponseError(_apiConfig, response.data)
         // __DEV__ && console.error(res)
-        throw new Error(result.message)
+        throw new Error(message)
       }
     }
 
     // 打印原始数据
     if (hitCache) {
-      this.logResponseCache(apiConfig, response.data)
+      this.logResponseCache(_apiConfig, response.data)
     } else {
-      this.logResponse(apiConfig, response.data)
+      this.logResponse(_apiConfig, response.data)
     }
 
     // 转换响应
-    response = apiConfig.transformResponse(response)
+    response = _apiConfig.transformResponse(response)
 
     return {
       ...response,
       from: hitCache ? "cache" : "network",
-      api: apiConfig
+      api: _apiConfig
     }
   }
 

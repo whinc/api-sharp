@@ -3,7 +3,7 @@ import {IHttpClient} from "../types"
 import { IRequest, IResponse } from "../types"
 import { isPlainObject, serializeSearch, isString, stringTable } from "../utils"
 
-export default class NodeHttpClient implements IHttpClient {
+export class NodeHttpClient implements IHttpClient {
   request(options: IRequest): Promise<IResponse> {
     return new Promise((resolve, reject) => {
       let body: string | Buffer = ""
