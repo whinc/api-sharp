@@ -5,7 +5,7 @@ import {
   isFormData,
   stringTable
 } from "../utils"
-import {IHttpClient} from "../types"
+import { IHttpClient } from "../types"
 import { IResponse, IRequest } from "../types"
 
 export interface WebXhrRequest extends IRequest {

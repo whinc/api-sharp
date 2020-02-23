@@ -1,4 +1,4 @@
-import {ICache} from "../types"
+import { ICache } from "../types"
 import { isNumber } from "../utils"
 
 interface StorageCacheItem<T = any> {

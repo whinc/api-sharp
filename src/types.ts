@@ -29,7 +29,6 @@ export interface ICache<V = any, K = string> {
   clear(): void
 }
 
-
 export type ApiConfig = BaseApiConfig & XHRApiConfig
 
 interface BaseApiConfig {
@@ -107,10 +106,10 @@ interface BaseApiConfig {
   transformResponse?: <T extends any = any>(response: IResponse<T>) => IResponse<T>
   /**
    * 检查响应数据是否有效
-   * 
+   *
    * 返回 false 或者 string (作为失败消息) 表示校验失败，其他值表示校验通过
    */
-  validateResponse?: (<T extends any = any>(response: IResponse<T>) => boolean | string | undefined)
+  validateResponse?: <T extends any = any>(response: IResponse<T>) => boolean | string | undefined
   /**
    * 接口超时时间，单位毫秒
    *
@@ -205,14 +204,13 @@ export type IRequest = {
    */
   fullUrl: string
   method: HttpMethod
-  body: any,
-  params: any,
+  body: any
+  params: any
   headers: Record<string, string>
   timeout: number
   responseType: "json" | "text"
   [key: string]: any
 }
-
 
 export type IResponse<T = any> = {
   /**

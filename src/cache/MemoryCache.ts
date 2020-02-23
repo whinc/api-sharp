@@ -1,5 +1,5 @@
 import { isNumber } from "../utils"
-import {ICache} from '../types'
+import { ICache } from "../types"
 
 interface MemoryCacheItem<T = any> {
   data: T

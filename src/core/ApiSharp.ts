@@ -1,5 +1,22 @@
-import { isString, getSortedString, identity, invariant, warning, formatFullUrl, isVoid, isUndefined } from "../utils"
-import { ApiResponse, LogType, ApiConfig, HttpMethod, IResponse, IRequest, IHttpClient, ICache } from "../types"
+import {
+  isString,
+  getSortedString,
+  identity,
+  invariant,
+  warning,
+  formatFullUrl,
+  isUndefined
+} from "../utils"
+import {
+  ApiResponse,
+  LogType,
+  ApiConfig,
+  HttpMethod,
+  IResponse,
+  IRequest,
+  IHttpClient,
+  ICache
+} from "../types"
 import { MemoryCache } from "../cache"
 import { WebXhrClient } from "../http_client"
 
@@ -69,13 +86,13 @@ export class ApiSharp {
   private readonly httpClient: IHttpClient
   private readonly cache: ICache<IResponse>
 
-  constructor(options: Omit<ApiConfig, 'url'> = {}) {
+  constructor(options: Omit<ApiConfig, "url"> = {}) {
     this.options = {
       ...defaultOptions,
       ...options,
       headers: {
         ...defaultOptions.headers,
-        ...options.headers,
+        ...options.headers
       }
     }
     this.httpClient = this.options.httpClient
@@ -151,8 +168,8 @@ export class ApiSharp {
 
     // 处理请求返回情况
     const result = _apiConfig.validateResponse(response)
-    const isValid = isUndefined(result) ? true : (isString(result) ? false : !!result)
-    const message = isString(result) ? result : ''
+    const isValid = isUndefined(result) ? true : isString(result) ? false : !!result
+    const message = isString(result) ? result : ""
 
     if (isValid) {
       // 请求成功，缓存结果（如果本次结果来自缓存，则不更新缓存，避免缓存期无限延长）
@@ -236,8 +253,12 @@ export class ApiSharp {
   }
 
   public createRequestConfig(apiConfig: Required<ApiConfig>) {
-    const fullUrl = formatFullUrl(apiConfig.baseURL, apiConfig.url, apiConfig.method === "GET" ? apiConfig.params : {})
-    return apiConfig.transformRequest({...apiConfig, fullUrl})
+    const fullUrl = formatFullUrl(
+      apiConfig.baseURL,
+      apiConfig.url,
+      apiConfig.method === "GET" ? apiConfig.params : {}
+    )
+    return apiConfig.transformRequest({ ...apiConfig, fullUrl })
   }
 
   private logRequest(api: Required<ApiConfig>) {
