@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/whinc/api-sharp/compare/v1.6.0...v1.6.1) (2020-02-23)
+
+### Bug Fixes
+
+- 修复依赖问题和类型问题 ([47c6214](https://github.com/whinc/api-sharp/commit/47c6214))
+
 # [1.6.0](https://github.com/whinc/api-sharp/compare/v1.5.3...v1.6.0) (2020-02-22)
 
 ### Bug Fixes
