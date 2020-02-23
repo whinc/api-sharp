@@ -81,7 +81,11 @@ export class WebXhrClient implements IHttpClient {
       xhr.onerror = function() {
         reject(new Error(stringTable.NETWORK_ERROR))
       }
-      xhr.send(body)
+      try {
+        xhr.send(body)
+      } catch (err) {
+        reject(err)
+      }
     })
   }
 }

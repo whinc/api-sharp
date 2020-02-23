@@ -56,8 +56,17 @@ export function formatFullUrl(
   url: string,
   query: Record<string, any> = {}
 ): string {
+  let fullUrl = ""
+  if (url.startsWith("http")) {
+    fullUrl = url
+  } else {
+    fullUrl += baseURL
+    if (!baseURL.endsWith("/")) fullUrl += "/"
+    // 移除开头的'/'以及多余的'/'
+    fullUrl += url.replace(/^\/+/, "").replace(/\/{2,}/, "/")
+  }
+
   const queryString = query ? encodeQuery(query) : ""
-  let fullUrl = baseURL + url
   if (fullUrl.includes("?")) {
     fullUrl += "&" + queryString
   } else {

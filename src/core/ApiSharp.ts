@@ -3,7 +3,6 @@ import {
   getSortedString,
   identity,
   invariant,
-  warning,
   formatFullUrl,
   isUndefined
 } from "../utils"
@@ -53,31 +52,32 @@ export const defaultOptions: Required<ApiConfig> = {
   retryTimes: 0,
   timeout: 0,
   enableLog: process.env.NODE_ENV !== "production",
-  formatLog: (type, api, data) => {
+  formatLog: (type, api, _data) => {
     const configMap = {
       [LogType.Request]: {
-        text: "Request",
+        text: "Request ",
         bgColor: "rgba(0, 116, 217, 0.69)",
         fgColor: "#0074D9"
       },
       [LogType.Response]: {
-        text: "OK     ",
+        text: "Response",
         bgColor: "rgba(61, 153, 112, 0.69)",
         fgColor: "#3D9970"
       },
       [LogType.ResponseError]: {
-        text: "Error  ",
+        text: "Error   ",
         bgColor: "rgba(255, 65, 54, 0.69)",
         fgColor: "#FF4136"
       },
       [LogType.ResponseCache]: {
-        text: "Cache  ",
+        text: "Cache   ",
         bgColor: "rgba(177, 13, 201, 0.69)",
         fgColor: "#B10DC9"
       }
     }
     const { text, bgColor, fgColor } = configMap[type]
     const { method, description, url, params, body } = api
+    const { data, error, count } = _data
     const query =
       Object.keys(params || {}).length > 0
         ? "?" +
@@ -89,7 +89,9 @@ export const defaultOptions: Required<ApiConfig> = {
         : ""
     if (type === LogType.Request) {
       console.log(
-        `%c${text} ${description}%c %c${method} ${url}${query}%c ${method === "POST" ? "%O" : ""}`,
+        `%c[${count}] ${text} ${description}%c %c${method} ${url}${query}%c ${
+          method === "POST" ? "%O" : ""
+        }`,
         `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
         "",
         `color: ${fgColor}`,
@@ -98,24 +100,23 @@ export const defaultOptions: Required<ApiConfig> = {
       )
     } else if (type === LogType.Response) {
       console.log(
-        `%c${text} ${description}%c %O`,
+        `%c[${count}] ${text} ${description}%c %O`,
         `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
         "",
         data
       )
     } else if (type === LogType.ResponseError) {
       console.log(
-        `%c${text} ${description}%c %c%s %O%c`,
+        `%c[${count}] ${text} ${description}%c %c%s%c`,
         `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
         "",
         `color: red`,
-        data.message,
-        data,
+        error.message,
         ""
       )
     } else if (type === LogType.ResponseCache) {
       console.log(
-        `%c${text} ${description}%c %O`,
+        `%c[${count}] ${text} ${description}%c %O`,
         `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
         "",
         data
@@ -128,6 +129,8 @@ export class ApiSharp {
   private readonly options: Required<ApiConfig>
   private readonly httpClient: IHttpClient
   private readonly cache: ICache<IResponse>
+  // 请求计数
+  private count = 0
 
   constructor(options: Omit<ApiConfig, "url"> = {}) {
     this.options = {
@@ -148,6 +151,7 @@ export class ApiSharp {
    * @return 响应数据
    */
   async request<T = any>(apiConfig: ApiConfig | string): Promise<ApiResponse<T>> {
+    this.count++
     const _apiConfig = this.processApiConfig(apiConfig)
     const requestConfig: IRequest = this.createRequestConfig(_apiConfig)
 
@@ -228,9 +232,9 @@ export class ApiSharp {
       if (_apiConfig.enableRetry && _apiConfig.retryTimes >= 1) {
         return this.request({ ..._apiConfig, retryTimes: _apiConfig.retryTimes - 1 })
       } else {
-        this.logResponseError(_apiConfig, new Error(JSON.stringify(response.data)))
-        // __DEV__ && console.error(res)
-        throw new Error(message)
+        const err = new Error(message)
+        this.logResponseError(_apiConfig, err)
+        throw err
       }
     }
 
@@ -260,15 +264,12 @@ export class ApiSharp {
     // 合并配置项
     const apiConfig = merge({}, defaultOptions, this.options, _apiConfig)
 
-    invariant(apiConfig.url && isString(apiConfig.url), "url 为空")
+    if (!apiConfig.description) {
+      apiConfig.description = apiConfig.url.slice(apiConfig.url.lastIndexOf("/") + 1)
+    }
 
     invariant(httpMethodRegExp.test(apiConfig.method), `无效的 HTTP 方法："${apiConfig.method}"`)
     apiConfig.method = apiConfig.method.toUpperCase() as HttpMethod
-
-    warning(
-      apiConfig.method === "GET" || !apiConfig.enableCache,
-      `只有 GET 请求支持开启缓存，当前请求方法为"${apiConfig.method}"，缓存开启不会生效`
-    )
 
     apiConfig.timeout = Math.ceil(Math.max(apiConfig.timeout, 0))
 
@@ -296,18 +297,18 @@ export class ApiSharp {
   }
 
   private logRequest(api: Required<ApiConfig>) {
-    api.enableLog && api.formatLog(LogType.Request, api)
+    api.enableLog && api.formatLog(LogType.Request, api, { count: this.count })
   }
 
   private logResponse(api: Required<ApiConfig>, data) {
-    api.enableLog && api.formatLog(LogType.Response, api, data)
+    api.enableLog && api.formatLog(LogType.Response, api, { data, count: this.count })
   }
 
   private logResponseError(api: Required<ApiConfig>, error: Error) {
-    api.enableLog && api.formatLog(LogType.ResponseError, api, error)
+    api.enableLog && api.formatLog(LogType.ResponseError, api, { error, count: this.count })
   }
 
   private logResponseCache(api: Required<ApiConfig>, data) {
-    api.enableLog && api.formatLog(LogType.ResponseCache, api, data)
+    api.enableLog && api.formatLog(LogType.ResponseCache, api, { data, count: this.count })
   }
 }

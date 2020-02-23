@@ -1,0 +1,13 @@
+.row {
+  display: flex;
+  margin: 5px 0;
+  overflow: hidden;
+}
+
+.row *:nth-child(1)  {
+  flex: 0 0 150px;
+}
+
+.row input:nth-child(2) {
+  flex: auto;
+}

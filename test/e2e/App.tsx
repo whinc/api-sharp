@@ -1,7 +1,13 @@
 import React, { useState, useCallback } from "react"
 import { ApiSharp, defaultOptions } from "../../src"
 
-const apiSharp = new ApiSharp({})
+const apiSharp = new ApiSharp({
+  validateResponse: res => {
+    if (res.status < 200 || res.status >= 300) {
+      return `${res.status} ${res.statusText}`
+    }
+  }
+})
 
 export const App = () => {
   const [url, setUrl] = useState("http://localhost:4000/posts" || defaultOptions.url)
@@ -37,7 +43,7 @@ export const App = () => {
         setResponse(JSON.stringify(res, null, 2))
       },
       err => {
-        // console.error(err)
+        console.error(err)
         setResponse(err.message)
       }
     )
@@ -56,26 +62,26 @@ export const App = () => {
   ])
   return (
     <div>
-      <div>
+      <div className="row">
         <label>url: </label>
         <input value={url} onChange={e => setUrl(e.target.value)} />
       </div>
-      <div>
+      <div className="row">
         <label>baseURL: </label>
         <input value={baseURL} onChange={e => setBaseURL(e.target.value)} />
       </div>
-      <div>
+      <div className="row">
         <label>method: </label>
         <select value={method} onChange={e => setMethod(e.target.value as any)}>
           <option value="GET">GET</option>
           <option value="POST">POST</option>
         </select>
       </div>
-      <div>
+      <div className="row">
         <label>description: </label>
         <input value={description} onChange={e => setDescription(e.target.value)} />
       </div>
-      <div>
+      <div className="row">
         <label>params: </label>
         <input
           defaultValue={JSON.stringify(params)}
@@ -83,7 +89,7 @@ export const App = () => {
         />
       </div>
       {method === "POST" && (
-        <div>
+        <div className="row">
           <label>body: </label>
           <input
             defaultValue={JSON.stringify(body)}
@@ -91,18 +97,18 @@ export const App = () => {
           />
         </div>
       )}
-      <div>
+      <div className="row">
         <label>responseType: </label>
         <select value={responseType} onChange={e => setResponseType(e.target.value as any)}>
           <option value="json">json</option>
           <option value="text">text</option>
         </select>
       </div>
-      <div>
+      <div className="row">
         <label>timeout(ms): </label>
         <input value={timeout} onChange={e => setTimeout(parseInt(e.target.value))} />
       </div>
-      <div>
+      <div className="row">
         <label>enableCache: </label>
         <select
           value={JSON.stringify(enableCache)}
@@ -112,7 +118,7 @@ export const App = () => {
           <option value="false">关</option>
         </select>
       </div>
-      <div>
+      <div className="row">
         <label>cacheTime(ms): </label>
         <input value={cacheTime} onChange={e => setCacheTime(parseInt(e.target.value))} />
       </div>
