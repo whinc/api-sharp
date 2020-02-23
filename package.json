@@ -13,11 +13,12 @@
   ],
   "scripts": {
     "start": "tsdx watch",
-    "build": "tsdx build --format cjs,esm,umd --name ApiSharp",
+    "build": "tsdx build --format cjs,esm --name ApiSharp",
     "test": "tsdx test",
     "test:server": "json-server -p 4000 ./server/db.json --middlewares ./server/middleware.js",
     "test:watch": "tsdx test --watch",
     "test:coverage": "jest --coverage --coverageReporters=text-lcov | coveralls",
+    "test:e2e": "parcel ./test/e2e/index.html",
     "lint": "tsdx lint src",
     "lint:fix": "tsdx lint src --fix",
     "lint:types": "tsc --noEmit",
@@ -34,6 +35,8 @@
     "access": "public"
   },
   "dependencies": {
+    "lodash": "^4.17.15",
+    "lodash-es": "^4.17.15",
     "core-js": "^3.2.1"
   },
   "devDependencies": {
@@ -46,14 +49,18 @@
     "@types/express": "^4.17.1",
     "@types/jest": "^24.0.18",
     "@types/lodash": "^4.14.142",
+    "@types/react": "^16.9.22",
     "babel-jest": "^24.9.0",
     "coveralls": "^3.0.6",
+    "eslint-plugin-react-hooks": "^2.4.0",
     "husky": "^3.1.0",
     "json-server": "^0.15.1",
     "parcel": "^1.12.4",
     "pm2": "^3.5.1",
     "prettier": "^1.18.2",
     "pretty-quick": "^1.11.1",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
     "semantic-release": "^15.13.24",
     "ts-node": "^8.4.1",
     "tsdx": "^0.12.3",

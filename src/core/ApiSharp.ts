@@ -19,23 +19,9 @@ import {
 } from "../types"
 import { MemoryCache } from "../cache"
 import { WebXhrClient } from "../http_client"
+import merge from "lodash/merge"
 
 const httpMethodRegExp = /GET|POST|DELETE|HEAD|OPTIONS|PUT|PATCH/i
-
-const configMap = {
-  [LogType.Request]: { text: "Request", bgColor: "rgba(0, 116, 217, 0.69)", fgColor: "#0074D9" },
-  [LogType.Response]: { text: "Response", bgColor: "rgba(61, 153, 112, 0.69)", fgColor: "#3D9970" },
-  [LogType.ResponseError]: {
-    text: "Response Error",
-    bgColor: "rgba(255, 65, 54, 0.69)",
-    fgColor: "#FF4136"
-  },
-  [LogType.ResponseCache]: {
-    text: "Response Cache",
-    bgColor: "rgba(177, 13, 201, 0.69)",
-    fgColor: "#B10DC9"
-  }
-}
 
 export const defaultOptions: Required<ApiConfig> = {
   httpClient: new WebXhrClient(),
@@ -47,8 +33,8 @@ export const defaultOptions: Required<ApiConfig> = {
   },
   url: "",
   description: "",
-  params: null,
-  body: null,
+  params: {},
+  body: {},
   enableMock: false,
   mockData: undefined,
   method: "GET",
@@ -68,16 +54,73 @@ export const defaultOptions: Required<ApiConfig> = {
   timeout: 0,
   enableLog: process.env.NODE_ENV !== "production",
   formatLog: (type, api, data) => {
-    const config = configMap[type]
-    console.log(
-      `%c${config.text} %c %c${api.method}|${api.description}|${api.url}%c|%O|%O`,
-      `color: white; background-color: ${config.bgColor}; padding: 2px 5px; border-radius: 2px`,
-      "",
-      `color: ${config.fgColor}`,
-      "",
-      api.body,
-      data
-    )
+    const configMap = {
+      [LogType.Request]: {
+        text: "Request",
+        bgColor: "rgba(0, 116, 217, 0.69)",
+        fgColor: "#0074D9"
+      },
+      [LogType.Response]: {
+        text: "OK     ",
+        bgColor: "rgba(61, 153, 112, 0.69)",
+        fgColor: "#3D9970"
+      },
+      [LogType.ResponseError]: {
+        text: "Error  ",
+        bgColor: "rgba(255, 65, 54, 0.69)",
+        fgColor: "#FF4136"
+      },
+      [LogType.ResponseCache]: {
+        text: "Cache  ",
+        bgColor: "rgba(177, 13, 201, 0.69)",
+        fgColor: "#B10DC9"
+      }
+    }
+    const { text, bgColor, fgColor } = configMap[type]
+    const { method, description, url, params, body } = api
+    const query =
+      Object.keys(params || {}).length > 0
+        ? "?" +
+          Object.keys(params).reduce((q, k) => {
+            if (q) q += "&"
+            q += k + "=" + params[k]
+            return q
+          }, "")
+        : ""
+    if (type === LogType.Request) {
+      console.log(
+        `%c${text} ${description}%c %c${method} ${url}${query}%c ${method === "POST" ? "%O" : ""}`,
+        `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
+        "",
+        `color: ${fgColor}`,
+        "",
+        method === "POST" ? body : ""
+      )
+    } else if (type === LogType.Response) {
+      console.log(
+        `%c${text} ${description}%c %O`,
+        `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
+        "",
+        data
+      )
+    } else if (type === LogType.ResponseError) {
+      console.log(
+        `%c${text} ${description}%c %c%s %O%c`,
+        `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
+        "",
+        `color: red`,
+        data.message,
+        data,
+        ""
+      )
+    } else if (type === LogType.ResponseCache) {
+      console.log(
+        `%c${text} ${description}%c %O`,
+        `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
+        "",
+        data
+      )
+    }
   }
 }
 
@@ -119,7 +162,7 @@ export class ApiSharp {
       return {
         data: _apiConfig.mockData,
         from: "mock",
-        api: _apiConfig,
+        // api: _apiConfig,
         headers: {},
         status: 200,
         statusText: "OK"
@@ -161,7 +204,7 @@ export class ApiSharp {
       if (_apiConfig.enableRetry && _apiConfig.retryTimes >= 1) {
         return this.request({ ..._apiConfig, retryTimes: _apiConfig.retryTimes - 1 })
       } else {
-        this.logResponseError(err, _apiConfig)
+        this.logResponseError(_apiConfig, err)
         throw err
       }
     }
@@ -185,7 +228,7 @@ export class ApiSharp {
       if (_apiConfig.enableRetry && _apiConfig.retryTimes >= 1) {
         return this.request({ ..._apiConfig, retryTimes: _apiConfig.retryTimes - 1 })
       } else {
-        this.logResponseError(_apiConfig, response.data)
+        this.logResponseError(_apiConfig, new Error(JSON.stringify(response.data)))
         // __DEV__ && console.error(res)
         throw new Error(message)
       }
@@ -203,8 +246,8 @@ export class ApiSharp {
 
     return {
       ...response,
-      from: hitCache ? "cache" : "network",
-      api: _apiConfig
+      from: hitCache ? "cache" : "network"
+      // api: _apiConfig
     }
   }
 
@@ -215,16 +258,7 @@ export class ApiSharp {
     }
 
     // 合并配置项
-    const apiConfig = {
-      ...defaultOptions,
-      ...this.options,
-      ..._apiConfig,
-      headers: {
-        ...defaultOptions.headers,
-        ...this.options.headers,
-        ..._apiConfig.headers
-      }
-    }
+    const apiConfig = merge({}, defaultOptions, this.options, _apiConfig)
 
     invariant(apiConfig.url && isString(apiConfig.url), "url 为空")
 
@@ -269,8 +303,8 @@ export class ApiSharp {
     api.enableLog && api.formatLog(LogType.Response, api, data)
   }
 
-  private logResponseError(api: Required<ApiConfig>, data?: any) {
-    api.enableLog && api.formatLog(LogType.ResponseError, api, data)
+  private logResponseError(api: Required<ApiConfig>, error: Error) {
+    api.enableLog && api.formatLog(LogType.ResponseError, api, error)
   }
 
   private logResponseCache(api: Required<ApiConfig>, data) {

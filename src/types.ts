@@ -236,7 +236,7 @@ export type ApiResponse<T = any> = IResponse<T> & {
   /**
    * 请求接口描述符
    */
-  api: ApiConfig
+  // api: ApiConfig
   /**
    * 响应数据的来源
    */

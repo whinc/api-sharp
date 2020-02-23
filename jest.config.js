@@ -7,6 +7,6 @@ module.exports = {
       }
     }
   },
-  testMatch: ["<rootDir>/test/**/*.test.ts"],
-  watchPathIgnorePatterns: ["<rootDir>/test/server/", "<rootDir>/node_modules/"]
+  testMatch: ["<rootDir>/test/unit/**/*.test.ts"],
+  watchPathIgnorePatterns: ["<rootDir>/node_modules/"]
 }

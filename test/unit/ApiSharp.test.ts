@@ -3,37 +3,9 @@ import {
   ApiSharp,
   defaultOptions,
   ApiConfig
-} from "../src"
-import { WebXhrClient, HttpMethod } from "../src"
-import { stringTable } from "../src/utils"
-import { response } from "express"
-
-function testTypes() {
-  const apiSharp = new ApiSharp()
-  apiSharp.request({
-    url: '',
-    baseURL: '',
-    method: 'post',
-    headers: {
-      a: 'b'
-    },
-    description: '',
-    params: {a: 'b'},
-    body: {a: 'b'},
-    responseType: 'json',
-    transformRequest: request => {
-      return request
-    },
-    transformResponse: response => {
-      return response
-    },
-    validateResponse: response => {
-      if (response.status < 200 || response.status > 300) {
-        return 'hello'
-      }
-    }
-  })
-}
+} from "../../src"
+import { WebXhrClient, HttpMethod } from "../../src"
+import { stringTable } from "../../src/utils"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
 const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })

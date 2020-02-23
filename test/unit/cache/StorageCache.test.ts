@@ -1,4 +1,4 @@
-import {StorageType, StorageCache} from '../../src/cache'
+import {StorageType, StorageCache} from '../../../src/cache'
 
 const storageCache = new StorageCache(StorageType.LocalStorage)
 const key = "testKey"

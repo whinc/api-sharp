@@ -1,4 +1,4 @@
-import {MemoryCache} from '../../src/cache'
+import {MemoryCache} from '../../../src/cache'
 
 const memoryCache = new MemoryCache()
 const key = "testKey"

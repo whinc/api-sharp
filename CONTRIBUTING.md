@@ -24,11 +24,17 @@ tsconfig.json       // TS 编译配置
 
 ## 开发
 
+基于单元测试开发：
 1. 启动 node 模拟 API 服务端，执行`npm run test:server`
 2. 启动测试，执行`npm run test:watch`
-3. 在`src`目录下修改代码，在`test`目录编写测试用例
+3. 在`src`目录下修改代码，在`test/unit/`目录编写测试用例，在控制台查看输出
+
+基于浏览器运行环境开发：
+1. 启动 node 模拟 API 服务端，执行`npm run test:server`
+2. 启动测试页面，执行`npm run test:e2e`
+3. 在`src`目录下修改代码，在`test/e2e/`下面修改测试网页，在浏览器中查看效果
 
 ## 发布
 
 1. 合并代码到 master 分支
-2. 推送到远程仓库，触发 circleci 发布
+2. 推送到远程仓库 master 分支，触发 Github CI 发布工作流
