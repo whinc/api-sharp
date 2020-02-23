@@ -31,8 +31,6 @@ function testTypes() {
       if (response.status < 200 || response.status > 300) {
         return 'hello'
       }
-      return true
-      // return undefined
     }
   })
 }

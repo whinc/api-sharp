@@ -107,11 +107,10 @@ interface BaseApiConfig {
   transformResponse?: <T extends any = any>(response: IResponse<T>) => IResponse<T>
   /**
    * 检查响应数据是否有效
-   *
-   * @callback
-   * @default response => ({valid: response.status >= 200 && response.status < 300, message: response.statusText})
+   * 
+   * 返回 false 或者 string (作为失败消息) 表示校验失败，其他值表示校验通过
    */
-  validateResponse?: <T extends any = any>(response: IResponse<T>) => boolean | string | void
+  validateResponse?: (<T extends any = any>(response: IResponse<T>) => boolean | string | undefined)
   /**
    * 接口超时时间，单位毫秒
    *

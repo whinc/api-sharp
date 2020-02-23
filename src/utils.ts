@@ -6,10 +6,6 @@ export function isFunction(v: any): v is Function {
   return typeof v === "function"
 }
 
-export function isVoid(v: any): v is void {
-  return v === undefined
-}
-
 export function isUndefined(v: any): v is undefined {
   return v === undefined
 }

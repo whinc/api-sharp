@@ -1,4 +1,4 @@
-import { isString, getSortedString, identity, invariant, warning, formatFullUrl, isVoid } from "../utils"
+import { isString, getSortedString, identity, invariant, warning, formatFullUrl, isVoid, isUndefined } from "../utils"
 import { ApiResponse, LogType, ApiConfig, HttpMethod, IResponse, IRequest, IHttpClient, ICache } from "../types"
 import { MemoryCache } from "../cache"
 import { WebXhrClient } from "../http_client"
@@ -151,7 +151,7 @@ export class ApiSharp {
 
     // 处理请求返回情况
     const result = _apiConfig.validateResponse(response)
-    const isValid = isVoid(result) ? true : (isString(result) ? false : !!result)
+    const isValid = isUndefined(result) ? true : (isString(result) ? false : !!result)
     const message = isString(result) ? result : ''
 
     if (isValid) {
