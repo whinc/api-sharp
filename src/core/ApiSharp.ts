@@ -76,7 +76,7 @@ export const defaultOptions: Required<ApiConfig> = {
       }
     }
     const { text, bgColor, fgColor } = configMap[type]
-    const { method, description, url, params, body } = api
+    const { method, description, baseURL, url, params, body } = api
     const { data, error, count } = _data
     const query =
       Object.keys(params || {}).length > 0
@@ -88,8 +88,9 @@ export const defaultOptions: Required<ApiConfig> = {
           }, "")
         : ""
     if (type === LogType.Request) {
+      const fullUrl = formatFullUrl(baseURL, url)
       console.log(
-        `%c[${count}] ${text} ${description}%c %c${method} ${url}${query}%c ${
+        `%c[${count}] ${text} ${description}%c %c${method} ${fullUrl}${query}%c ${
           method === "POST" ? "%O" : ""
         }`,
         `color: white; background-color: ${bgColor}; padding: 2px 5px; border-radius: 2px`,
