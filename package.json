@@ -62,7 +62,7 @@
     "react": "16.12.0",
     "react-dom": "16.12.0",
     "semantic-release": "15.13.24",
-    "ts-node": "8.4.1",
+    "ts-node": "8.8.2",
     "tsdx": "0.12.3",
     "tslib": "1.10.0",
     "typescript": "3.6.3",
