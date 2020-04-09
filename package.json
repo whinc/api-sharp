@@ -53,7 +53,7 @@
     "babel-jest": "24.9.0",
     "coveralls": "3.0.6",
     "eslint-plugin-react-hooks": "2.4.0",
-    "husky": "3.1.0",
+    "husky": "4.2.5",
     "json-server": "0.15.1",
     "parcel": "1.12.4",
     "pm2": "3.5.1",
