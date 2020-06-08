@@ -1,14 +1,17 @@
 import axios from "axios"
-import {
-  ApiSharp,
-  defaultOptions,
-  ApiConfig
-} from "../../src"
+import { ApiSharp, defaultOptions, ApiConfig, IResponse } from "../../src"
 import { WebXhrClient, HttpMethod } from "../../src"
 import { stringTable } from "../../src/utils"
 
 // 设置为 any 类型，避开 TS 的类型检查，模拟 JS 调用
-const apiSharp = new ApiSharp({ enableLog: false, httpClient: new WebXhrClient() })
+const apiSharp = new ApiSharp({
+  enableLog: false,
+  httpClient: new WebXhrClient(),
+  validateResponse: (res: IResponse<{ error: Error }>) => {
+    console.log(res.data.error)
+    return true
+  }
+})
 // const apiSharp = new ApiSharp({ enableLog: false, httpClient: new NodeHttpClient() })
 
 const baseURL = "http://localhost:4000"

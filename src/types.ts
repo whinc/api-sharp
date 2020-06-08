@@ -103,13 +103,15 @@ interface BaseApiConfig {
   /**
    * 转换响应数据
    */
-  transformResponse?: <T extends any = any>(response: IResponse<T>) => IResponse<T>
+  transformResponse?: <T extends IResponse<any> = IResponse<any>>(response: T) => IResponse<any>
   /**
    * 检查响应数据是否有效
    *
    * 返回 false 或者 string (作为失败消息) 表示校验失败，其他值表示校验通过
    */
-  validateResponse?: <T extends any = any>(response: IResponse<T>) => boolean | string | undefined
+  validateResponse?: <T extends IResponse<any> = IResponse<any>>(
+    response: T
+  ) => boolean | string | undefined
   /**
    * 接口超时时间，单位毫秒
    *
