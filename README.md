@@ -326,6 +326,10 @@ export interface IResponse<T = any> {
 
 [CHANGELOG](./CHANGELOG.md)
 
+## 贡献指南
+
+[CONTRIBUTION.md](./CONTRIBUTION.md)
+
 ## LICENSE
 
 [MIT](./LICENSE)
