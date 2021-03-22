@@ -274,6 +274,12 @@ interface CommonApiDescriptor {
    */
   cacheTime?: number
   /**
+   * 缓存接口
+   * 
+   * 内置了提供基于内存、localStorage 和 sessionStorage 的缓存接口实现
+   */
+  cache?: ICache
+  /**
    * 开启接口数据模拟
    *
    * 默认`false`
