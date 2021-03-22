@@ -1,12 +1,14 @@
 # 参与共建
 
-## 项目设置
 
-1. 克隆项目，执行`git clone <project_git_address>`
-2. 安装依赖，运行`npm install`
-3. 创建分支用于提交PR，执行`git checkout -b pr/<your-branch-name>`
+## 设计思路
 
-项目目录结构如下：
+架构图
+
+![](./docs/arch.png)
+
+目录结构
+
 ```
 docs                // 文档
 src                 // 源码
@@ -21,6 +23,16 @@ babel.config.js     // babel 配置
 package.json        // 包配置
 tsconfig.json       // TS 编译配置
 ```
+
+类继承图
+
+![](./docs/class.png)
+
+## 项目设置
+
+1. 克隆项目，执行`git clone <project_git_address>`
+2. 安装依赖，运行`npm install`
+3. 创建分支用于提交PR，执行`git checkout -b pr/<your-branch-name>`
 
 ## 开发
 

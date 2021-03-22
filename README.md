@@ -101,10 +101,15 @@ const response = await apiSharp.request({
 开启缓存（仅支持 GET 请求）
 
 ```js
+import {memoryCache, localStorageCache, sessionStorageCache} from "api-sharp"
+
 const apiDescriptor = {
   url: "/json/server_date",
   enableCache: true,
-  cacheTime: 10 * 1000
+  // 设置缓存时间，单位毫秒
+  cacheTime: 10 * 1000,
+  // 设置缓存存储位置，默认存储在内存
+  cache: memoryCache
 }
 const response1 = await apiSharp.request(apiDescriptor)
 const response2 = await apiSharp.request(apiDescriptor)
@@ -119,6 +124,7 @@ expect(response1.data).toEqual(response2.data)
 const response = await apiSharp.request({
   url: "/json/server_date",
   enableMock: true,
+  // 模拟数据，支持任意 JS 数据类型
   mockData: "mock data"
 })
 expect(response.data).toEqual("mock data")
@@ -130,9 +136,28 @@ expect(response.data).toEqual("mock data")
 const response = await apiSharp.request({
   url: "/json/server_date",
   enableRetry: true,
+  // 最大重试次数
   retryTimes: 3
 })
 ```
+
+开启日志（默认开启）
+
+```js
+const response = await apiSharp.request({
+  url: "/json/articles",
+  method: "GET",
+  description: "文章列表",
+  enableLog: true,
+  // 自定义日志输出
+  formatLog: (type, api, _data) => {
+    console.log(type, api, _data)
+  }
+})
+```
+
+默认日志如下：
+![](./docs/screenshot1.png)
 
 ## api-sharp API
 
