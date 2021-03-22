@@ -1,5 +1,11 @@
 import React, { useState, useCallback } from "react"
-import { ApiSharp, defaultOptions } from "../../src"
+import {
+  ApiSharp,
+  defaultOptions,
+  memoryCache,
+  localStorageCache,
+  sessionStorageCache
+} from "../../src"
 
 const apiSharp = new ApiSharp({
   validateResponse: res => {
@@ -21,6 +27,7 @@ export const App = () => {
   const [timeout, setTimeout] = useState(defaultOptions.timeout)
   const [enableCache, setEnableCache] = useState(defaultOptions.enableCache)
   const [cacheTime, setCacheTime] = useState(defaultOptions.cacheTime)
+  const [cacheType, setCacheType] = useState<CacheType>("memory")
 
   const [response, setResponse] = useState(null)
   const onClickSend = useCallback(() => {
@@ -35,7 +42,8 @@ export const App = () => {
       responseType,
       enableCache,
       timeout,
-      cacheTime
+      cacheTime,
+      cache: getCacheByType(cacheType)
     }
     apiSharp.request(apiConfig).then(
       res => {
@@ -56,9 +64,10 @@ export const App = () => {
     params,
     body,
     responseType,
-    timeout,
     enableCache,
-    cacheTime
+    timeout,
+    cacheTime,
+    cacheType
   ])
   return (
     <div>
@@ -122,6 +131,14 @@ export const App = () => {
         <label>cacheTime(ms): </label>
         <input value={cacheTime} onChange={e => setCacheTime(parseInt(e.target.value))} />
       </div>
+      <div className="row">
+        <label>cache(ms): </label>
+        <select value={cacheType} onChange={e => setCacheType(e.target.value)}>
+          <option value="memory">Memory</option>
+          <option value="localStorage">LocalStorage</option>
+          <option value="sessionStorage">SessiontStorage</option>
+        </select>
+      </div>
       <div style={{ marginTop: 10 }}>
         <button onClick={onClickSend}>Send request</button>
       </div>
@@ -134,4 +151,18 @@ export const App = () => {
       </div>
     </div>
   )
+}
+
+type CacheType = "memory" | "localStorage" | "sessionStorage"
+function getCacheByType(cacheType: CacheType) {
+  switch (cacheType) {
+    case "memory":
+      return memoryCache
+    case "localStorage":
+      return localStorageCache
+    case "sessionStorage":
+      return sessionStorageCache
+    default:
+      throw new Error(`无效的缓存类型："${cacheType}"`)
+  }
 }

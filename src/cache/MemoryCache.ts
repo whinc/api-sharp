@@ -33,15 +33,14 @@ export class MemoryCache<V> implements ICache<V> {
     }
   }
 
-  set(key: string, value: V, timeout: number): V {
-    if (!isNumber(timeout) || timeout <= 0) return value
+  set(key: string, value: V, timeout: number) {
+    if (!isNumber(timeout) || timeout <= 0) return
 
     this.cacheMap[key] = {
       data: value,
       timeout,
       cacheTime: Date.now()
     }
-    return value
   }
 
   clear(): void {

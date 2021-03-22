@@ -13,7 +13,7 @@ export enum StorageType {
 }
 
 /**
- * 基于持久化存储的缓存
+ * 基于 Web Storage 的持久化存储的缓存
  */
 export class StorageCache<V> implements ICache<V> {
   private readonly storage: Storage
@@ -50,8 +50,8 @@ export class StorageCache<V> implements ICache<V> {
       return undefined
     }
   }
-  set(key: string, value: V, timeout: number): V {
-    if (!isNumber(timeout) || timeout <= 0) return value
+  set(key: string, value: V, timeout: number) {
+    if (!isNumber(timeout) || timeout <= 0) return
 
     try {
       const cacheItem: StorageCacheItem = {
@@ -67,7 +67,6 @@ export class StorageCache<V> implements ICache<V> {
         console.error(err)
       }
     }
-    return value
   }
   delete(key: string): boolean {
     this.storage.removeItem(key)

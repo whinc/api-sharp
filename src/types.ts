@@ -24,7 +24,7 @@ export enum LogType {
 export interface ICache<V = any, K = string> {
   has(key: K): boolean
   get(key: K): V | undefined
-  set(key: K, value: V, timeout: number): V
+  set(key: K, value: V, timeout: number): void
   delete(key: K): boolean
   clear(): void
 }
@@ -179,7 +179,7 @@ interface BaseApiConfig {
   /**
    * 替换内部的缓存实现
    */
-  cache?: ICache<IResponse>
+  cache?: ICache
 }
 
 interface XHRApiConfig {

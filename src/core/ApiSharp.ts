@@ -16,7 +16,7 @@ import {
   IHttpClient,
   ICache
 } from "../types"
-import { MemoryCache } from "../cache"
+import { memoryCache } from "../cache"
 import { WebXhrClient } from "../http_client"
 import merge from "lodash/merge"
 
@@ -24,7 +24,7 @@ const httpMethodRegExp = /GET|POST|DELETE|HEAD|OPTIONS|PUT|PATCH/i
 
 export const defaultOptions: Required<ApiConfig> = {
   httpClient: new WebXhrClient(),
-  cache: new MemoryCache<IResponse>(),
+  cache: memoryCache,
   withCredentials: false,
   baseURL: "",
   headers: {
@@ -155,6 +155,7 @@ export class ApiSharp {
     this.count++
     const _apiConfig = this.processApiConfig(apiConfig)
     const requestConfig: IRequest = this.createRequestConfig(_apiConfig)
+    const _cache = _apiConfig.cache || this.cache
 
     // 转换请求
     Object.assign(_apiConfig, requestConfig)
@@ -181,8 +182,8 @@ export class ApiSharp {
     // 处理缓存
     if (_apiConfig.enableCache) {
       cachedKey = this.generateCachedKey(_apiConfig)
-      if (this.cache.has(cachedKey)) {
-        const cachedRes = this.cache.get(cachedKey)!
+      if (_cache.has(cachedKey)) {
+        const cachedRes = _cache.get(cachedKey)!
         requestPromise = Promise.resolve(cachedRes)
         hitCache = true
       } else {
@@ -204,7 +205,7 @@ export class ApiSharp {
 
       // 请求失败时删除缓存
       if (_apiConfig.enableCache && cachedKey) {
-        this.cache.delete(cachedKey)
+        _cache.delete(cachedKey)
       }
       if (_apiConfig.enableRetry && _apiConfig.retryTimes >= 1) {
         return this.request({ ..._apiConfig, retryTimes: _apiConfig.retryTimes - 1 })
@@ -222,12 +223,12 @@ export class ApiSharp {
     if (isValid) {
       // 请求成功，缓存结果（如果本次结果来自缓存，则不更新缓存，避免缓存期无限延长）
       if (_apiConfig.enableCache && cachedKey && !hitCache) {
-        this.cache.set(cachedKey, response, _apiConfig.cacheTime)
+        _cache.set(cachedKey, response, _apiConfig.cacheTime)
       }
     } else {
       // 请求失败，重置缓存
       if (_apiConfig.enableCache && cachedKey) {
-        this.cache.delete(cachedKey)
+        _cache.delete(cachedKey)
       }
       // 失败重试
       if (_apiConfig.enableRetry && _apiConfig.retryTimes >= 1) {
