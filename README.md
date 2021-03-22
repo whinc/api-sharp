@@ -156,7 +156,8 @@ const response = await apiSharp.request({
 })
 ```
 
-默认日志如下：
+默认日志截图：
+
 ![](./docs/screenshot1.png)
 
 ## api-sharp API
@@ -349,7 +350,7 @@ export interface IResponse<T = any> {
 
 ## 更新日志
 
-[CHANGELOG](./CHANGELOG.md)
+[CHANGELOG.md](./CHANGELOG.md)
 
 ## 贡献指南
 

@@ -10,18 +10,23 @@
 目录结构
 
 ```
-docs                // 文档
-src                 // 源码
-  |--cache          // 缓存实现
-  |--http_client    // HTTP请求实现
-  |--types          // 内部类型定义
+src
+├── cache                   // 缓存接口及内置实现
+│   ├── MemoryCache.ts
+│   ├── StorageCache.ts
+│   └── index.ts
+├── core
+│   └── ApiSharp.ts         // 核心实现 
+├── http_client             // HTTP请求引擎
+│   ├── NodeHttpClient.ts
+│   ├── WebXhrClient.ts
+│   └── index.ts
+├── index.ts
+├── types.ts
 test
-  |--api_sharp      // 单元测试
-  |--server         // 接口测试服务
-types               // 全局类型定义
-babel.config.js     // babel 配置
-package.json        // 包配置
-tsconfig.json       // TS 编译配置
+  |--e2e            // Web页面测试
+  |--unit           // 单元测试
+types               // 类型定义
 ```
 
 类继承图
