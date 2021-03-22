@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/whinc/api-sharp/compare/v1.6.3...v1.7.0) (2021-03-22)
+
+
+### Features
+
+* 支持单次请求设置cache存储 ([b1720a8](https://github.com/whinc/api-sharp/commit/b1720a8))
+
 ## [1.6.3](https://github.com/whinc/api-sharp/compare/v1.6.2...v1.6.3) (2020-06-08)
 
 
